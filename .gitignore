@@ -1,0 +1,12 @@
+*/__pycache__/*
+data/*
+*/.ipynb_checkpoints/*
+BMM_SEQ_STIM*
+*NASS*
+*spike_times_*
+*DSPTS_*
+*SPTS_*
+*X_*
+*.p
+*/wandb
+*/__pycache__/*

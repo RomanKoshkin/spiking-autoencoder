@@ -1,0 +1,100 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "CODElldb", // make sure you have the CODElldb package (Vadim Chugunov) first
+            "type": "lldb",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "compile & run this"
+        },
+        {
+            "name": "[SHARED library]",
+            "type": "lldb",
+            "request": "launch",
+            "program": "/home/roman/miniconda3/envs/__base__/bin/python", //specifies which program we call (python)
+            "args": [
+                // "${fileDirname}/../debug/debug.py",
+                "${workspaceFolder}/debug/debug.py",
+                "buck"
+            ], // what code python will run (this code uses a shared library)
+            "cwd": "${workspaceFolder}/debug",
+            "preLaunchTask": "[SHARED library]" // we need to call theis task
+            // to compile the shared library (the instructins are in the tasks.json)
+        },
+        {
+            "name": "c++ (gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/roman/miniconda3/bin/python",
+            "args": [
+                "${fileDirname}/test2.py"
+            ], // what code python will run (this code uses a shared library)
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            // "osx": {
+            //     "MIMode": "gdb", //lldb  (with lldb, use the custom compiled lldb-mi)
+            // },
+            // "MIMode": "lldb", // (with lldb, use the custom compiled lldb-mi)
+            // "miDebuggerPath": "/Users/romankoshkin/lldb-mi/build/src/lldb-mi",
+            "preLaunchTask": "[SHARED library]" // we need to call theis task
+        },
+        {
+            "name": "Python /w args",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "1",
+                "1", // HAGA
+                "0.2",
+                "1800",
+                "1",
+                "0",
+                "0",
+                "buck"
+            ]
+        },
+        {
+            "name": "c++ w/ args",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}", //specifies which program we call (python)
+            "args": [
+                "3000",
+                "0",
+                "0.2",
+                "600.0",
+                "0.01875",
+                "0.0075",
+                "20.0",
+                "40.0",
+                "200.0",
+                "500.0",
+                "50",
+                "100.0",
+                "0",
+                "0"
+            ],
+            // what code python will run (this code uses a shared library)
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "compile & run this" // we need to call theis task
+            // to compile the shared library (the instructins are in the tasks.json)
+        },
+    ]
+}

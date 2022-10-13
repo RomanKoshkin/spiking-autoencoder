@@ -1,0 +1,67 @@
+// these are the TASKS that are launched before the actions in the launch.json
+// basically, these are instruction to compile the source
+// the configurations in the launch.json call prelaunch tasks in this file
+// by name ('label')
+{
+    "tasks": [
+        { //this task compiles an ordinary binary
+            "type": "shell",
+            "label": "compile & run this",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-std=gnu++11", //these params are decided as described in the c++ tutorial // gnu++11
+                "-O0", // to disable inlining (if you want to watch vars during debugging)
+                // "-dynamiclib", // -shared -fPIC (on linux) we need not just a binary, but a shared library
+                // "-O3",
+                // "-ftree-vectorize",
+                // "-march=native",
+                // "-mavx",
+                "-g", // we tell VScode to use the current
+                "${file}", // file as the source code to compile
+                "-o", // output name (can be renamed into .dylib (Mac) or .so (linux))
+                "${fileDirname}/${fileBasenameNoExtension}",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        { //this task compiles a shared library
+            "type": "shell",
+            "label": "[SHARED library]",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-std=gnu++11", //these params are decided as described in the c++ tutorial
+                // "-dynamiclib",  on the Mac
+                "-shared", //(on linux) we need not just a binary, but a shared library
+                "-fPIC", //(on linux) we need not just a binary, but a shared library
+                // "-O3",
+                // "-ftree-vectorize",
+                // "-march=native",
+                // "-mavx",
+                "-g", // we tell VScode to use the current
+                "${file}", // file as the source code to compile
+                "-o", // output name (can be renamed into .dylib (Mac) or .so (linux))
+                // "${fileDirname}/bmm.dylib"
+                "${workspaceFolder}/modules/bmm.dylib"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+    ],
+    "version": "2.0.0"
+}
