@@ -6,6 +6,7 @@ import time, math
 class Pong(object):
 
     def __init__(self, gridsize=50, speed=1, paddle_len=10, paddle_width=3, restart=False):
+
         self.gridsize = gridsize
         self.h = gridsize + 1
         self.w = gridsize + 1
@@ -46,7 +47,7 @@ class Pong(object):
             self.x = self.paddle_width
             self._xreverse *= -1
             reward = 1
-        if self.x <= 0.1:
+        if self.x <= 0:
             self._intercept = self.y
             self.x = 0
             self._xreverse *= -1
@@ -61,7 +62,7 @@ class Pong(object):
                 self._xreverse *= -1
             else:
                 end = True
-        if self.y <= 0.1:
+        if self.y <= 0:
             self.y = 0
             self._intercept = self.y
             self._yreverse *= -1
@@ -99,31 +100,37 @@ class Pong(object):
         if end:
             return
         plt.clf()  # clear figure
-        screen = self.screen * 0
-        screen[int(np.round(self.y)), int(np.round(self.x))] = 1
+        self.screen *= 0
+        self.screen[int(np.round(self.y)), int(np.round(self.x))] = 1
 
-        screen[self.paddle_t:self.paddle_b, 0:self.paddle_width] = 1
+        self.screen[self.paddle_t:self.paddle_b, 0:self.paddle_width] = 1
         if reward == 1:
-            screen *= -1
-        plt.imshow(screen)
+            self.screen *= -1
+        plt.imshow(self.screen)
         plt.draw()
         plt.pause(0.0001)
 
 
-env = Pong(gridsize=50, speed=2, paddle_len=20, paddle_width=2, restart=True)
-
 # usage
-while True:
-    env.start_rollout()
 
-    for i in range(1000):
+# env = Pong(
+#     gridsize=20,
+#     speed=1,
+#     paddle_len=7,
+#     paddle_width=1,
+#     restart=True,
+# )
+# while True:
+#     env.start_rollout()
 
-        reward, end = env.step(action=np.random.choice([-1, 0, 1], p=[0.2, 0.1, 0.7]))
-        env.render(reward=reward, end=end)
-        if reward == -1:
-            print('MISS!!!!')
-            break
-        if reward == 1:
-            print('YES!!!!')
-        if end:
-            break
+#     for i in range(1000):
+
+#         reward, end = env.step(action=np.random.choice([-1, 0, 1], p=[0.2, 0.1, 0.7]))
+#         env.render(reward=reward, end=end)
+#         if reward == -1:
+#             print('MISS!!!!')
+#             break
+#         if reward == 1:
+#             print('YES!!!!')
+#         if end:
+#             break
