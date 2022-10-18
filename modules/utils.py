@@ -340,8 +340,8 @@ def get_chain(t):
     plt.close()
 
 
-def clusterize(w, NE, NI):
-    x = np.copy(w[:NE, :NE])
+def clusterize(w):
+    x = np.copy(w)
     G = nx.from_numpy_matrix(x)
     adj_mat = nx.to_numpy_array(G)
     louvain = Louvain()
@@ -357,6 +357,39 @@ def clusterize(w, NE, NI):
     W_ = W_[newids, :]
     W_ = W_[:, newids]
     return W_, labels, counts, mod, newids
+
+
+def processSpikes(m, sp, NE, NEo, NI):
+    """
+    1) cluster E neurons
+    2) label neurons according to the clusters the are in
+    3) return sorting dictionary to sort the raster
+    """
+    W_, labels, counts, mod, newids = clusterize(m.getWeights()[:NE, :NE])
+
+    recurrent, inputs, inhibs = [], [], []  # lists of neuron ids
+
+    inp_label = max(labels) + 1  # take the number of clusters and add 1 (this will be the label of inputs)
+    inh_label = -1  # inhibitory neurons will be labeled -1
+    for i, d in enumerate(labels):
+        if i < NE - NEo:
+            recurrent.append(d)
+        else:
+            inputs.append((i, inp_label))
+    for i in range(NE, NE + NI):
+        inhibs.append((i, inh_label))
+
+    # sort recurrents, so that clusters become apparent
+    recurrent = sorted([(i, d) for i, d in enumerate(recurrent)], key=lambda tup: tup[1], reverse=True)
+    newidsAndLabels = recurrent + inputs + inhibs  # merge (neuron ids, cluster id) tuples
+
+    newids = [it[0] for it in newidsAndLabels]
+    newlabels = [it[1] for it in newidsAndLabels]
+    nid2aid = {nid: assid for nid, assid in newidsAndLabels}  # maps neuron ids to cluster id
+    sort_dict = {it[0]: i for i, it in enumerate(newidsAndLabels)}  # maps old neuron ids to sorted neuron ids
+    sp['aid'] = sp.neuronid.map(nid2aid).astype('int')  # do map
+    sp['sorted_neuronid'] = sp.neuronid.map(sort_dict)  # do map
+    return sp
 
 
 def bruteforce_sequences(candidate):
@@ -494,6 +527,12 @@ def load_states_from_experiment(m, cell_id, experiment_id=0, stimDur=0, nneur=0,
     m.set_t(t)
 
     case = 3
+    m = set_UU(m, case, wide)
+    return m
+
+
+def set_UU(m, case, wide):
+    case = 3
     with open(f'../data/UU_case{case}.npy', 'rb') as f:
         UU = np.load(f)
 
@@ -501,7 +540,6 @@ def load_states_from_experiment(m, cell_id, experiment_id=0, stimDur=0, nneur=0,
         m.setUU(np.ascontiguousarray(UU))
     else:
         m.setUU(np.ones_like(UU) * np.mean(UU))
-
     return m
 
 
@@ -565,7 +603,9 @@ def load_spike_data(W_bak, NE, NI, cell_id, NEo):
         else:
             return -1
 
-    w_, labels, counts, mod, newids = clusterize(W_bak, NE, NI)
+    # first, cluster recurrent neurons
+    stNid, enNid = 0, NE - NEo
+    w_, labels, counts, mod, newids = clusterize(W_bak, stNid, enNid)
     map_dict = {j: i for i, j in enumerate(newids)}
 
     sp = pd.read_csv(f'../data/spike_times_{cell_id}', delimiter=' ', header=None)
