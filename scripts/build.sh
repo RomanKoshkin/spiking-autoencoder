@@ -3,7 +3,7 @@
 echo "working directory: `pwd`"
 
 g++ \
--std=gnu++11 \
+-std=gnu++14 \
 -march=native \
 -ftree-vectorize \
 -Ofast \

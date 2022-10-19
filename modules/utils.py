@@ -543,15 +543,38 @@ def set_UU(m, case, wide):
     return m
 
 
-def make_UU(asInPaper, narrow=True):
-    global m
-    if asInPaper == 3:
+def simple_make_UU(NE, case, wide):
+
+    N_ = int(8e6)  # create an array with enough margin to delete values sampled above 1.0
+
+    if case == 3:
         shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 20, 38.9, 1.0, 133, False
-    elif asInPaper == 2:
+    elif case == 2:
         shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 13.3, 26.6, 1.0, 133, False
-    elif asInPaper == 1:
+    elif case == 1:
         shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 20, 38.9, 1.0, 133, True
-    elif asInPaper == 0:
+    elif case == 0:
+        shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 13, 26, 1.0, 133, True
+    else:
+        raise
+
+    if wide:
+        x = np.random.gamma(shape_wide, scale_wide, N_) / divisor
+    else:
+        x = np.random.gamma(shape_narrow, scale_narrow, N_) / divisor
+    x = np.delete(x, np.where(x > 1))
+
+    return x[:NE]
+
+
+def make_UU(m, params, NE, narrow=True, case=None):
+    if case == 3:
+        shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 20, 38.9, 1.0, 133, False
+    elif case == 2:
+        shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 13.3, 26.6, 1.0, 133, False
+    elif case == 1:
+        shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 20, 38.9, 1.0, 133, True
+    elif case == 0:
         shape_wide, scale_wide, shape_narrow, scale_narrow, divisor, flip = 2, 13, 26, 1.0, 133, True
     else:
         raise
@@ -559,34 +582,32 @@ def make_UU(asInPaper, narrow=True):
     N_ = int(8e6)  # create an array with enough margin to delete values sampled above 1.0
     try:
         with open(f'/flash/FukaiU/roman/RelProbTestSims/RelProbTest_{case}_1_1/wts_wi_0.5.p', 'rb') as f:
-            ww = pickle.load(f)[:2500, :2500]
+            ww = pickle.load(f)[:NE, :NE]
         i, j = np.where(ww > 0.001)
     except:
-        ww = np.copy(m.getWeights())[:2500, :2500]
+        ww = np.copy(m.getWeights())[:NE, :NE]
         i, j = np.where(ww > params['Jepsilon'])
 
     if not narrow:
         x = np.random.gamma(shape_wide, scale_wide, N_) / divisor
         x = np.delete(x, np.where(x > 1))
         if not flip:
-            x = (x[:2500 * 2500]).reshape(2500, 2500)
+            x = (x[:NE * NE]).reshape(NE, NE)
         else:
-            x = -(x[:2500 * 2500]).reshape(2500, 2500) + 1
-        UU_wide = np.zeros((2500, 2500))
+            x = -(x[:NE * NE]).reshape(NE, NE) + 1
+        UU_wide = np.zeros((NE, NE))
         UU_wide[i, j] = x[i, j]
-        UU_wide_mean = UU_wide[i, j].mean()
         return UU_wide, i, j
 
     else:
         x = np.random.gamma(shape_narrow, scale_narrow, N_) / divisor
         x = np.delete(x, np.where(x > 1))
         if not flip:
-            x = (x[:2500 * 2500]).reshape(2500, 2500)
+            x = (x[:NE * NE]).reshape(NE, NE)
         else:
-            x = -(x[:2500 * 2500]).reshape(2500, 2500) + 1
-        UU_narrow = np.zeros((2500, 2500))
+            x = -(x[:NE * NE]).reshape(NE, NE) + 1
+        UU_narrow = np.zeros((NE, NE))
         UU_narrow[i, j] = x[i, j]
-        UU_narrow_mean = UU_narrow[i, j].mean()
         return UU_narrow, i, j
 
 
