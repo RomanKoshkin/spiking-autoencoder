@@ -138,7 +138,7 @@ class Pong(object):
 
         # if the ball is not outsize the grid, draw the ball
         if not ((self.x > self.max_x) or (reward == -1)):
-            self.screen[int(np.round(self.y)), int(np.round(self.x))] = 1
+            self.screen[int(np.round(self.y)), int(np.round(self.x))] = 3
         # draw the paddle
         self.screen[self.paddle_t:self.paddle_b, 0:self.paddle_width] = 1
 
@@ -146,6 +146,7 @@ class Pong(object):
         #     self.screen *= -1
 
         im = gaussian_filter(self.screen, sigma=self.sigma) if gauss else self.screen
+        im = im / im.max()
         if self.visible:
             plt.imshow(im)
             plt.title(f'{self.y:.2f}, {self.x:.2f}, {reward}')

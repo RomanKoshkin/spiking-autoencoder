@@ -92,7 +92,7 @@ void Model::sim(int interval) {
                 // only on excitatory neurons)
                 if (saveflag == 1) {
                     ofsr << t << " " << i << endl;  // record a line to file
-                    spikeRunningMean(i);
+                    saveRecentSpikes(i, t);
                 }
 
                 if (STDPon) {
@@ -146,7 +146,7 @@ void Model::sim(int interval) {
                 // // record a spike on an INHIBITORY NEURON
                 if (saveflag == 1) {
                     ofsr << t << " " << i << endl;
-                    spikeRunningMean(i);
+                    // we dont keep a history of recent spikes on IHIBITORY spikes
                 }
             }
         }
@@ -253,6 +253,22 @@ Model* createModel(int _NE, int _NI, int _NEo, int _cell_id) {
     return new Model(_NE, _NI, _NEo, _cell_id);
 }
 
+// NOTE: in progress
+double* getRecents(Model* m) {
+    const int I = m->NE;  // we only need the excitatory nerons
+
+    for (int i = 0; i < I; i++) {
+        int J = m->sphist[i].size();
+        // we have an array of pointers
+        (m->ptr_r)[i] = 0.0;  // zero the array
+        for (int j = 0; j < J; j++) {
+            // the weight of the spike will be the (exponentially) lower the older it is
+            float expw = exp(0.08 * ((m->sphist[i][j]) - (m->t)));
+            (m->ptr_r)[i] += expw;
+        }
+    }
+    return m->ptr_r;
+}
 void dumpSpikeStates(Model* m) {
     m->saveDSPTS();
     m->saveX();

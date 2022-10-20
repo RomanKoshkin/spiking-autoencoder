@@ -2,7 +2,7 @@ from itertools import chain
 
 import sys, time, json, yaml
 
-import os, pickle, shutil, warnings
+import os, pickle, shutil, warnings, shutil
 import numpy as np
 from multiprocessing import Pool
 from scipy import signal
@@ -658,3 +658,58 @@ def load_spike_data(W_bak, NE, NI, cell_id, NEo):
     sp_srt1['neuronid'] += NE - NEo
 
     return sp, sp_srt0, sp_srt1
+
+
+def readLastNms(period_ms, path):
+    """"
+    read spiketimes backward from the tail of the spike_times file
+    """
+
+    def get_line_bwd(f):
+        while (f.read(1) != b'\n'):
+            f.seek(-2, os.SEEK_CUR)
+        line = f.readline().decode()
+        f.seek(-len(line) - 2, os.SEEK_CUR)
+        return line
+
+    T, NID = [], []
+
+    with open(path, 'rb') as f:
+        f.seek(-2, os.SEEK_END)
+        line = get_line_bwd(f)
+        a = [float(i) for i in line[:-1].split(' ')]
+        t_last = a[0]
+        t = t_last
+        # print(t, t_last)
+        while t_last - t < period_ms:
+            # print(t, t_last)
+            line = get_line_bwd(f)
+            a = [float(i) for i in line[:-1].split(' ')]
+            t = a[0]
+            T.insert(0, a[0]), int(a[1])
+            NID.insert(0, int(a[1]))
+    return pd.DataFrame({'spiketime': T, 'neuronid': NID})
+
+
+def removeFilesInFolder(pathToFolder):
+    for filename in os.listdir(pathToFolder):
+        file_path = os.path.join(pathToFolder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+
+def getExpWghNeurAct(period_ms, path, tau):
+    lst = readLastNms(period_ms, path)
+    T_MAX = lst.spiketime.max()
+    lst['dif'] = lst.spiketime - T_MAX
+    lst['weight'] = lst.dif.apply(lambda x: np.exp(tau * x))
+    lst
+    d = dict()
+    for nid in range(400):
+        d[nid] = lst[lst.neuronid == nid].weight.sum()
+    return d

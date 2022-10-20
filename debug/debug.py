@@ -75,11 +75,6 @@ stimDur = 16000
 nneur = 10
 wide = True
 
-m = load_states_from_experiment(m,
-                                cell_id=cell_id,
-                                experiment_id=experiment_id,
-                                stimDur=stimDur,
-                                nneur=nneur,
-                                wide=wide)
+m.sim(1000000)
 
 cprint('success!', color='yellow')

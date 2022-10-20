@@ -152,6 +152,10 @@ class cClassOne(object):
         lib.set_hEhI.argtypes = [c_void_p, c_double, c_double]  # takes no args
         lib.set_hEhI.restype = c_void_p  # returns a void pointer
 
+        # NOTE: in progress
+        lib.getRecents.argtypes = [c_void_p]  # takes no args
+        lib.getRecents.restype = ndpointer(dtype=c_double, shape=(NE,))
+
         # we call the constructor from the imported libpkg.so module
         self.obj = lib.createModel(NE, NI, NEo, cell_id)  # look in teh cpp code. CreateNet returns a pointer
 
@@ -286,3 +290,8 @@ class cClassOne(object):
 
     def set_HAGA(self, _HAGA):
         lib.set_HAGA(self.obj, _HAGA)
+
+    # NOTE: in progress
+    def getRecents(self):
+        resp = lib.getRecents(self.obj)
+        return resp

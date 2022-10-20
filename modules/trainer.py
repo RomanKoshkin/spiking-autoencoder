@@ -66,6 +66,7 @@ class Trainer(object):
         return im
 
     def train(self, nsteps):
+        removeFilesInFolder('../assets/')
         pbar = trange(nsteps, desc=f'Time : {self.m.getState().t:.2f}', bar_format=bar_format)  # 2000 for 400 s
         for i in pbar:
             try:
@@ -75,6 +76,16 @@ class Trainer(object):
                     _ = self.on_sensory(im)
                 else:
                     _ = self.on_reward(reward)
+
+                activity = self.m.getRecents()[:400].reshape(20, 20)
+
+                fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+                _ = ax[0].imshow(im)
+                _ = ax[1].imshow(activity)
+                _ = ax[1].set_title(f'{self.m.getState().t:.2f} step: {self.env.env.stepid}')
+                _ = plt.savefig(f'../assets/activity_{i:05d}.png')
+
+                _ = plt.clf()
 
                 if i % 1 == 0:
                     W = np.copy(self.m.getWeights())[:self.NE, :self.NE]

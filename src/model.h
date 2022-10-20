@@ -270,11 +270,16 @@ class Model {
                            // at the beginning of the simulation
     double tinit = 100.0;  // period of time after which STDP kicks in
 
+    double DEQUE_LEN_MS = 50.0;
+
     bool STDPon = true;
     bool homeostatic = true;
 
     vector<double> dvec;
     vector<double> UU;
+
+    deque<double> spdeque;         // holds a recent history of spikes of one neurons
+    vector<deque<double>> sphist;  // holds neuron-specific spike histories
 
     vector<int> ivec;
     deque<double> ideque;  // <<<< !!!!!!!!
@@ -345,7 +350,7 @@ class Model {
     void reinit_Jinidx();
     void saveSpts();
     void loadSpts(string);
-    void spikeRunningMean(int);
+    void saveRecentSpikes(int, double);
 
     double acc0;
     double acc1;
@@ -375,6 +380,7 @@ class Model {
     double* ptr_D;
     double* ptr_UU;
     double* ptr_theta;
+    double* ptr_r;
 
     // flexible arrays can only be declared at the end of the class !!
     //         double sm[];
@@ -421,6 +427,7 @@ Model::Model(int _NE, int _NI, int _NEo, int _cell_id) : m_mt(m_randomdevice()) 
     ptr_D = new double[NE];
     ptr_UU = new double[NE];
     ptr_theta = new double[NE];
+    ptr_r = new double[NE];
 
     // since no suitable conversion function from "std::vector<double,
     // std::allocator<double>>" to "double *" exists, we need to copy the
@@ -494,5 +501,10 @@ Model::Model(int _NE, int _NI, int _NEo, int _cell_id) : m_mt(m_randomdevice()) 
     // initialize stimulus
     for (int i = 0; i < NE; i++) {
         hStim.push_back(0);
+    }
+
+    // make a container for neurons' spike histories
+    for (int i = 0; i < NE; i++) {
+        sphist.push_back(spdeque);
     }
 }

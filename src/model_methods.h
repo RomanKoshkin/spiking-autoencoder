@@ -15,9 +15,12 @@ using namespace std;
 // 	return rand()/(RAND_MAX + 1.0);
 // }
 
-void Model::spikeRunningMean(int i) {
-    int a = 1;
-    int b = 2;
+void Model::saveRecentSpikes(int i, double t) {
+    sphist[i].push_back(t);
+    // remove spikes older than DEQUE_T_LEN
+    if ((t - sphist[i].front()) > DEQUE_LEN_MS) {
+        sphist[i].pop_front();
+    }
 }
 
 double Model::dice() {
