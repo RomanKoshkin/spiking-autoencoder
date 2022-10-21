@@ -28,6 +28,7 @@ class Pong(object):
         self.paddle_t = self.max_y // 2 - self.paddle_len // 2
         self.paddle_b = self.max_y // 2 + self.paddle_len // 2
         self.stepid = 0
+        self.paddle_on = True
 
         if self.visible:
             plt.ion()
@@ -58,23 +59,26 @@ class Pong(object):
             self.y += self._yreverse * self.v * np.sin(self.phi)
             self.x -= self._xreverse * self.v * np.cos(self.phi)
 
-            # deflect if the ball hits the paddle
-            if (self.x <= self.paddle_width) and ((self.y <= self.paddle_b) and (self.y >= self.paddle_t)):
-                self._intercept = self.y
-                self.x = self.paddle_width
-                self._xreverse *= -1
-                reward = 1
+            if self.paddle_on:
+                # deflect if the ball hits the paddle
+                if (self.x <= self.paddle_width) and ((self.y <= self.paddle_b) and (self.y >= self.paddle_t)):
+                    self._intercept = self.y
+                    self.x = self.paddle_width
+                    self._xreverse *= -1
+                    reward = 1
 
             # if the ball goes beyond the left wall
             if np.round(self.x) < 0:
                 self._intercept = self.y
-                reward = -1
+                if self.paddle_on:
+                    reward = -1
+                self._xreverse *= -1
 
             if np.round(self.x) == 0:
                 self._intercept = self.y
                 self.x = 0
-                # in case you want the ball to bounce off that wall:
-                # self._xreverse *= -1
+                if not self.paddle_on:
+                    self._xreverse *= -1
 
             # end if the ball goes beyond the right wall:
             if self.x > self.max_x:
@@ -96,16 +100,17 @@ class Pong(object):
                 self._intercept = self.y
                 self._yreverse *= -1
 
-            # move the paddle up
-            if action == -1:
-                self.paddle_b -= 1
-                self.paddle_t -= 1
-            # move the paddle down
-            elif action == 1:
-                self.paddle_b += 1
-                self.paddle_t += 1
-            else:
-                pass
+            if self.paddle_on:
+                # move the paddle up
+                if action == -1:
+                    self.paddle_b -= 1
+                    self.paddle_t -= 1
+                # move the paddle down
+                elif action == 1:
+                    self.paddle_b += 1
+                    self.paddle_t += 1
+                else:
+                    pass
 
             # boundary condition for the paddle (force it to stay within the screen)
             if self.paddle_b > self.max_y:
@@ -140,13 +145,15 @@ class Pong(object):
         if not ((self.x > self.max_x) or (reward == -1)):
             self.screen[int(np.round(self.y)), int(np.round(self.x))] = 3
         # draw the paddle
-        self.screen[self.paddle_t:self.paddle_b, 0:self.paddle_width] = 1
+        if self.paddle_on:
+            self.screen[self.paddle_t:self.paddle_b, 0:self.paddle_width] = 1
 
         # if reward == 1:
         #     self.screen *= -1
 
         im = gaussian_filter(self.screen, sigma=self.sigma) if gauss else self.screen
-        im = im / im.max()
+        if not im.max() == 0.0:
+            im = im / im.max()
         if self.visible:
             plt.imshow(im)
             plt.title(f'{self.y:.2f}, {self.x:.2f}, {reward}')

@@ -24,6 +24,17 @@ from scipy.sparse import csgraph
 from sknetwork.clustering import Louvain, modularity
 
 
+class HiddenPrints:
+
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
+
+
 def load_config(config_name):
     yaml_txt = open(f'../configs/{config_name}').read()
     return yaml.load(yaml_txt, Loader=yaml.FullLoader)
@@ -713,3 +724,14 @@ def getExpWghNeurAct(period_ms, path, tau):
     for nid in range(400):
         d[nid] = lst[lst.neuronid == nid].weight.sum()
     return d
+
+@njit
+def gridToLinear(A, i, j):
+    for a in A:
+        if ((a[1] == i) & (a[2] == j)):
+            return a[0]
+    return -1
+
+@njit
+def linearToGrid(A, i):
+    return A[i][1], A[i][2]
