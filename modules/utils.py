@@ -725,6 +725,7 @@ def getExpWghNeurAct(period_ms, path, tau):
         d[nid] = lst[lst.neuronid == nid].weight.sum()
     return d
 
+
 @njit
 def gridToLinear(A, i, j):
     for a in A:
@@ -732,6 +733,37 @@ def gridToLinear(A, i, j):
             return a[0]
     return -1
 
+
 @njit
 def linearToGrid(A, i):
     return A[i][1], A[i][2]
+
+
+def compute_weight_bias(W):
+
+    A = np.arange(400).reshape(20, 20)
+
+    X = np.zeros((20, 20))
+    Y = np.zeros((20, 20))
+
+    U = np.zeros((20, 20))
+    V = np.zeros((20, 20))
+
+    for ci in range(20):
+        for cj in range(20):
+            center = (ci, cj)
+            z = np.zeros((3, 3))
+            for disp_i in [-1, 0, 1]:
+                for disp_j in [-1, 0, 1]:
+                    ni = ci + disp_i
+                    nj = ci + disp_j
+                    if (ni < 0) or (nj < 0) or (ni > 19) or (nj > 19):
+                        continue
+                    w = W[A[(ni, nj)], A[center]]
+                    z[disp_i + 1, disp_j + 1] = w
+            dy, dx = np.gradient(z)
+            X[ci, cj] = ci
+            Y[ci, cj] = cj
+            U[ci, cj] = dx.sum()
+            V[ci, cj] = dy.sum()
+    return X, Y, U, V

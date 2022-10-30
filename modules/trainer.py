@@ -19,12 +19,13 @@ class Trainer(object):
         self.DEvo = []
         self.MOD = []
         self.prev_degree = None
+        removeFilesInFolder('../assets/')  # delete old frames
 
-    def on_reward(self, reward):
+    def on_reward(self):
         x = np.ones((self.NE,)).astype('int32')
         self.m.setStim(x)
 
-        if reward == -1:
+        if self.reward == -1:
             stimpat = np.zeros((400,), dtype=np.float64)
             stim_electrodes = np.random.choice(self.stim_electrodes, 4, replace=False)
             stimpat[stim_electrodes] = 2
@@ -35,13 +36,15 @@ class Trainer(object):
                 x1[:400] = stimpat.flatten()
                 self.m.setStimIntensity(x1)
                 self.m.sim(500)
+                self._snapshot(x1[:400].reshape(20, 20))
 
                 x1 = np.zeros((self.NE,))
                 self.m.setStimIntensity(x1)
                 self.m.sim(2000)
+                self._snapshot(x1[:400].reshape(20, 20))
             return stimpat
 
-        if reward == 1:
+        if self.reward == 1:
             stimpat = np.zeros((400,), dtype=np.float64)
             stimpat[self.stim_electrodes] = 2
             stimpat = gaussian_filter(stimpat.reshape(20, 20), sigma=1)
@@ -51,10 +54,12 @@ class Trainer(object):
                 x1[:400] = stimpat.flatten()
                 self.m.setStimIntensity(x1)
                 self.m.sim(500)
+                self._snapshot(x1[:400].reshape(20, 20))
 
                 x1 = np.zeros((self.NE,))
                 self.m.setStimIntensity(x1)
                 self.m.sim(500)
+                self._snapshot(x1[:400].reshape(20, 20))
             return stimpat
         return None
 
@@ -63,14 +68,16 @@ class Trainer(object):
         x1[:400] = im.flatten()
         self.m.setStimIntensity(x1)
         self.m.sim(5000)
+        self._snapshot(im)
         return im
 
-    def _snapshot(self, i, im, activity, action, reward, pbar):
+    def _snapshot(self, im):
+        activity = self.m.getRecents()[:400].reshape(20, 20)
         W = np.copy(self.m.getWeights())[:self.NE, :self.NE]
         w_, labels, counts, mod, newids = clusterize(W)  # <<<<<<< !!!!!!!!!!!
         t = self.m.getState().t
-        pbar.set_description(
-            f'Time : {t/1000:.2f} s, mod: {mod:.2f}, N: {len(np.unique(labels))}, a: {action}, rw: {reward}')
+        self.pbar.set_description(
+            f'Time : {t/1000:.2f} s, mod: {mod:.2f}, N: {len(np.unique(labels))}, a: {self.action}, rw: {self.reward}')
 
         self.WgtEvo.append(calcAssWgts(t, self.m, labels))
         self.FEvo.append(calcF(t, self.m, labels))
@@ -86,33 +93,39 @@ class Trainer(object):
             degree_diff = degree - self.prev_degree
         self.prev_degree = np.copy(degree)
 
+        # X, Y, U, V = compute_weight_bias(W[:400, :400])
+
         _, ax = plt.subplots(1, 4, figsize=(17, 4), sharey=True)
         _ = ax[0].imshow(im)
+        _ = ax[0].set_title('stimulus')
+
         _ = ax[1].imshow(activity)
+        # ax[1].quiver(X, Y, U, V, angles='xy', scale=30, color='red', width=0.005)
+        _ = ax[1].set_title('low-passed activity')
+
         _ = ax[2].imshow(degree / degree.max())
+        _ = ax[2].set_title('degree')
+
         _ = ax[3].imshow(degree_diff / degree_diff.max())
-        _title = f'{self.m.getState().t:.2f} step: {self.env.env.stepid} mod: {mod:.2f}, action {action}'
+        _ = ax[3].set_title('deriv. of degree')
+
+        _title = (f'{self.m.getState().t:.2f} step: {self.env.env.stepid}' +
+                  f'mod: {mod:.2f}, action {self.action}, rw: {self.reward}')
         _ = ax[1].set_title(_title)
-        _ = plt.savefig(f'../assets/activity_{i:05d}.png')
+        _ = plt.savefig(f'../assets/activity_{self.i:05d}.png')
         _ = plt.close()
 
     def train(self, nsteps):
 
-        removeFilesInFolder('../assets/')  # delete old frames
-
-        pbar = trange(nsteps, desc=f'Time : {self.m.getState().t:.2f}', bar_format=bar_format)  # 2000 for 400 s
-        for i in pbar:
+        self.pbar = trange(nsteps, desc=f'Time : {self.m.getState().t:.2f}', bar_format=bar_format)  # 2000 for 400 s
+        for self.i in self.pbar:
             try:
-                action = np.random.choice([-1, 0, 1])
-                im, xpos, ypos, reward = self.env.step(action=action, gauss=True)
-                if reward == 0:
+                self.action = np.random.choice([-1, 0, 1])
+                im, xpos, ypos, self.reward = self.env.step(action=self.action, gauss=True)
+                if self.reward == 0:
                     _ = self.on_sensory(im)
                 else:
-                    _ = self.on_reward(reward)
-
-                activity = self.m.getRecents()[:400].reshape(20, 20)
-
-                self._snapshot(i, im, activity, action, reward, pbar)
+                    _ = self.on_reward()
 
             except KeyboardInterrupt:
                 cprint('User interrupt', color='green')

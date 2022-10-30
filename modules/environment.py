@@ -36,8 +36,8 @@ class Pong(object):
 
     def _start_rollout(self):
 
-        self.phi = math.radians(np.random.choice(np.arange(60) - 30))
-        self._intercept = np.random.choice(self.gridsize)
+        self.phi = math.radians(45)  #math.radians(np.random.choice(np.arange(60) - 30))
+        self._intercept = 3  #np.random.choice(self.gridsize)
         self.y = self._intercept
         self.x = self.max_x
 
