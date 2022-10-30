@@ -12,7 +12,6 @@ ffmpeg \
 -pix_fmt yuv420p \
 -hide_banner \
 -loglevel error \
-output.mp4 && \
-ls | grep ".png" | xargs rm
+output.mp4
 
 echo "video is ready in `pwd`"

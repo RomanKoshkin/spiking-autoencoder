@@ -10,5 +10,7 @@ BMM_SEQ_STIM*
 *SPTS_*
 *X_*
 *.p
+*.png
+*.mp4
 */wandb
 */__pycache__/*

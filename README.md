@@ -10,3 +10,9 @@ The network is "embodied" in an enviroment in which it can move the paddle up an
 
 ## Exp1
 See if activity of a group of briefly stimulated neurons propagates.
+
+## Notes
+- if you turn off the paddle, the network might not have enough stimulus to get going, i.e. the ball will not elicit any spikes in the place cells it flies over.
+
+- Kick-start the network by turning on the paddle
+- after the ball produces activity reliably, you can turn off the paddle.

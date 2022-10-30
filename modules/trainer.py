@@ -26,10 +26,14 @@ class Trainer(object):
         self.m.setStim(x)
 
         if self.reward == -1:
+            # FIXME: this must be an UNpredictable stim
             stimpat = np.zeros((400,), dtype=np.float64)
-            stim_electrodes = np.random.choice(self.stim_electrodes, 4, replace=False)
-            stimpat[stim_electrodes] = 2
-            stimpat = gaussian_filter(stimpat.reshape(20, 20), sigma=1)
+            if len(self.stim_electrodes) > 3:
+                stim_electrodes = np.random.choice(self.stim_electrodes, 4, replace=False)
+                stimpat[stim_electrodes] = 2
+                stimpat = gaussian_filter(stimpat.reshape(20, 20), sigma=1)
+            else:
+                pass
 
             for i in range(16):
                 x1 = np.zeros((self.NE,))
@@ -45,9 +49,14 @@ class Trainer(object):
             return stimpat
 
         if self.reward == 1:
+            # FIXME: this must be a predictable stim
             stimpat = np.zeros((400,), dtype=np.float64)
-            stimpat[self.stim_electrodes] = 2
-            stimpat = gaussian_filter(stimpat.reshape(20, 20), sigma=1)
+            if len(self.stim_electrodes) > 3:
+                stim_electrodes = np.random.choice(self.stim_electrodes, 4, replace=False)
+                stimpat[stim_electrodes] = 2
+                stimpat = gaussian_filter(stimpat.reshape(20, 20), sigma=1)
+            else:
+                pass
 
             for i in range(10):
                 x1 = np.zeros((self.NE,))
@@ -93,14 +102,14 @@ class Trainer(object):
             degree_diff = degree - self.prev_degree
         self.prev_degree = np.copy(degree)
 
-        # X, Y, U, V = compute_weight_bias(W[:400, :400])
+        X, Y, U, V = compute_weight_bias(W[:400, :400])
 
         _, ax = plt.subplots(1, 4, figsize=(17, 4), sharey=True)
         _ = ax[0].imshow(im)
         _ = ax[0].set_title('stimulus')
 
         _ = ax[1].imshow(activity)
-        # ax[1].quiver(X, Y, U, V, angles='xy', scale=30, color='red', width=0.005)
+        ax[1].quiver(X, Y, U, V, angles='xy', scale=30, color='red', width=0.005)
         _ = ax[1].set_title('low-passed activity')
 
         _ = ax[2].imshow(degree / degree.max())
@@ -112,7 +121,7 @@ class Trainer(object):
         _title = (f'{self.m.getState().t:.2f} step: {self.env.env.stepid}' +
                   f'mod: {mod:.2f}, action {self.action}, rw: {self.reward}')
         _ = ax[1].set_title(_title)
-        _ = plt.savefig(f'../assets/activity_{self.i:05d}.png')
+        _ = plt.savefig(f'../assets/activity_{int(self.m.getState().t*100):09d}.png')
         _ = plt.close()
 
     def train(self, nsteps):
