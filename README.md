@@ -1,6 +1,9 @@
 # TODO
 
-- The matrix becomes more diagonal over time, which is good: place cells emerge.
+- try changing the speed of the ball in network time (step between the snapshots)
+- try a denser weight matrix
+- try disinhibiting the network
+- ? The matrix becomes more diagonal over time, which is good: place cells emerge.
 - You don't need spurious assemblies. Turn down inhibition -- see what happens.
 - to see if the ball forms tracks, make a move of in+outdegree deltas
 - turn off rewards.

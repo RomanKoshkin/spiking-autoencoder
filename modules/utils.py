@@ -740,6 +740,11 @@ def linearToGrid(A, i):
 
 
 def compute_weight_bias(W):
+    """
+    for each neuron, find immediate spatial neighbors (8), get weights to these
+    neurons as direction vectors, return the sum of those eight spatial vectors
+    Assumes that the weight matrix is 400 x 400
+    """
 
     A = np.arange(400).reshape(20, 20)
 
