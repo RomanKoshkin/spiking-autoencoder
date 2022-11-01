@@ -338,6 +338,83 @@ void Model::STDP(int i) {
     }
 }
 
+void Model::symSTDP(int i) {
+    /* First (LTD), we treat the chosen neuron as PREsynaptic and loop over all
+      the POSTSYNAPTIC excitatory neurons that THE CHOSEN NEURON synapses on.
+      Since we're at time t (and this is the latest time), the spikes recorded on
+      those "POSTsynaptic" neurons will have an earlier timing than the spike
+      recorded on the currently chosen neuron (that we treat as PREsynaptic). This
+      indicates that the synaptic weight between this chosen neuron (presynaptic)
+      and all the other neurons (postsynaptic) will decrease.  */
+
+    for (int ip = 0; ip < NE; ip++) {
+        if (Jo[ip][i] > Jepsilon && t > tinit) {
+            // dspts is a deque of spiking times on the ith POSTSYNAPTIC neurons
+            for (const auto& tt : dspts[ip]) {
+                if (HAGA == 1) {
+                    // STP-dependent (new HAGA)
+                    // double alphaLTP = alpha_function_LTP(Jo[ip][i]); // <<<<
+                    // ALPHA <<<<<<<<<<<<<<<<<<<<<<<<< double alphaLTD =
+                    // alpha_function_LTD(Jo[ip][i]); // <<<< ALPHA
+                    // <<<<<<<<<<<<<<<<<<<<<<<<<
+                    double alphaLTD = tanh_LTD(Jo[ip][i]);  // <<<< ALPHA <<<<<<<<<<<<<<<<<<<<<<<<<
+                    Jo[ip][i] -= F[i] * D[i] * alphaLTD * Cd * exp((tt - t) / tpp);
+                } else {
+                    // STP-independent (new Hiratani)
+                    Jo[ip][i] -= Cd * exp((tt - t) / tpp);
+                }
+            }
+            // we force the weights to be no less than Jmin, THIS WAS NOT IN THE
+            // PAPER
+            if (Jo[ip][i] > Jmax) Jo[ip][i] = Jmax;
+            if (Jo[ip][i] < Jmin) Jo[ip][i] = Jmin;
+        }
+    }
+
+    // (LTP)
+
+    /* Jinidx is a list of lists (shape (2500 POSTsyn, n PREsyn)). E.g. if in
+      row 15 we have number 10, it means that the weight between POSTsynaptic
+      neuron 15 and presynaptc neuron 10 is greater than Jepsilon */
+
+    /* we treat the currently chosen neuron as POSTtsynaptic, and we loop over
+      all the presynaptic neurons that synapse on the current postsynaptic neuron.
+      At time t (the latest time, and we don't yet know any spikes that will
+      happen in the future) all the spikes on the presynaptic neurons with id j
+      will have an earlier timing that the spike on the currently chosen neuron i
+      (that we treat as postsynaptic for now). This indicates that the weights
+      between the chosen neuron treated as post- synaptic for now and all the
+      other neurons (treated as presynaptic for now) will be potentiated.  */
+
+    for (const auto& j : Jinidx[i]) {
+        // at each loop we get the id of the jth presynaptic neuron with J >
+        // Jepsilon
+        if (t > tinit) {
+            for (const auto& tt : dspts[j]) {
+                // we loop over all the spike times on the jth PRESYNAPTIC
+                // neuron
+                if (HAGA == 1) {
+                    // double alphaLTP = alpha_function_LTP(Jo[i][j]); // <<<<
+                    // ALPHA <<<<<<<<<<<<<<<<<<<<<<<<< double alphaLTD =
+                    // alpha_function_LTD(Jo[i][j]); // <<<< ALPHA
+                    // <<<<<<<<<<<<<<<<<<<<<<<<<
+                    double alphaLTP = tanh_LTP(Jo[i][j]);  // <<<< ALPHA <<<<<<<<<<<<<<<<<<<<<<<<<
+                    // STP-dependent (по новому определению Haga)
+                    Jo[i][j] += F[j] * D[j] * alphaLTP * Cp * exp(-(t - tt) / tpp);
+                } else {
+                    // STP-independent (по новому определению Hiratani: не так
+                    // как было у Хиратани в статье, а просто без F*D)
+                    Jo[i][j] += Cp * exp(-(t - tt) / tpp);
+                }
+            }
+            // we force the weights to be no more than Jmax, THIS WAS NOT IN THE
+            // PAPER
+            if (Jo[i][j] > Jmax) Jo[i][j] = Jmax;
+            if (Jo[i][j] < Jmin) Jo[i][j] = Jmin;
+        }
+    }
+}
+
 // initialize the weight matrix
 vector<vector<double>> Model::calc_J(double JEEinit, double JEI) {
     vector<vector<double>> J;
@@ -525,6 +602,7 @@ void Model::setParams(Model::ParamsStructType params) {
     taustf = params.taustf;
     taustd = params.taustd;
     HAGA = params.HAGA;
+    symmetric = params.symmetric;
 
     reinitFD();
 }
@@ -585,6 +663,7 @@ Model::retParamsStructType Model::getState() {
     ret_struct.taustf = taustf;
     ret_struct.taustd = taustd;
     ret_struct.HAGA = HAGA;
+    ret_struct.symmetric = symmetric;
 
     return ret_struct;
 }

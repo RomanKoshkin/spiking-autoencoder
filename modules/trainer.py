@@ -102,15 +102,40 @@ class Trainer(object):
             degree_diff = degree - self.prev_degree
         self.prev_degree = np.copy(degree)
 
-        X, Y, U, V = compute_weight_bias(W[:400, :400])
+        X, Y, U, V, XX, YY, II, JJ, Z = getVF(W[:400, :400])
 
         _, ax = plt.subplots(1, 4, figsize=(17, 4), sharey=True)
         _ = ax[0].imshow(im)
         _ = ax[0].set_title('stimulus')
 
+        ax[1].quiver(X, Y, U, V, color='red', width=0.01)
+        ax[1].quiver(XX.flatten(), YY.flatten(), II.flatten(), JJ.flatten(), color='yellow', alpha=0.3, width=0.005)
         _ = ax[1].imshow(activity)
-        ax[1].quiver(X, Y, U, V, angles='xy', scale=30, color='red', width=0.005)
-        _ = ax[1].set_title('low-passed activity')
+
+        ax[1].grid()
+        ax[1].set_xticks([0., 5., 10., 15., 20.])
+        ax[1].set_yticks([0., 5., 10., 15., 20.])
+        ax[1].set_xlim(0, 19.5)
+        ax[1].set_ylim(0, 19.5)
+        ax[1].invert_yaxis()
+        ax[1].set_title('low-passed activity')
+
+        # _ = ax[1].quiver(X, Y, U, V, scale=5, color='red')
+        # _ = ax[1].quiver(
+        #     XX.flatten(),
+        #     YY.flatten(),
+        #     II.flatten(),
+        #     JJ.flatten(),
+        #     scale=5,
+        #     color='gray',
+        #     alpha=0.6,
+        # )
+        # _ = ax[1].imshow(activity)
+        # ax[1].set_xlim(0, 20)
+        # ax[1].set_ylim(0, 20)
+        # ax[1].invert_yaxis()
+        # ax[1].grid()
+        # _ = ax[1].set_title('low-passed activity')
 
         _ = ax[2].imshow(degree / degree.max())
         _ = ax[2].set_title('degree')
@@ -121,7 +146,7 @@ class Trainer(object):
         _title = (f'{self.m.getState().t:.2f} step: {self.env.env.stepid}' +
                   f'mod: {mod:.2f}, action {self.action}, rw: {self.reward}')
         _ = ax[1].set_title(_title)
-        _ = plt.savefig(f'../assets/activity_{int(self.m.getState().t*100):09d}.png')
+        _ = plt.savefig(f'../assets/activity_{int(self.m.getState().t*100):09d}.png', dpi=200)
         _ = plt.close()
 
     def train(self, nsteps):

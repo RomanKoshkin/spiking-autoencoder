@@ -94,6 +94,7 @@ class Model {
         double Cp;
         double Cd;
         bool HAGA;
+        bool symmetric;
     } ParamsStructType;
 
     // returned struct
@@ -177,7 +178,8 @@ class Model {
         double taustf;
         double taustd;
         bool HAGA;
-        int cell_id;
+        // int cell_id;
+        bool symmetric;
     } retParamsStructType;
 
     // ostringstream ossSTP;
@@ -273,6 +275,7 @@ class Model {
     double DEQUE_LEN_MS = 50.0;
 
     bool STDPon = true;
+    bool symmetric = true;
     bool homeostatic = true;
 
     vector<double> dvec;
@@ -339,6 +342,7 @@ class Model {
     void updateMembranePot(int);
     void checkIfStim(int);
     void STDP(int);
+    void symSTDP(int);
     void saveSTP();
     void reinitFD();
     void saveX();

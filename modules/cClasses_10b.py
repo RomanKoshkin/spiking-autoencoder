@@ -22,8 +22,8 @@ class Params(Structure):
                 ("Jepsilon", c_double), ("tpp", c_double), ("tpd", c_double), ("twnd", c_double), ("g", c_double),
                 ("itauh", c_int), ("hsd", c_double), ("hh", c_double), ("Ip", c_double), ("a", c_double),
                 ("xEinit", c_double), ("xIinit", c_double), ("tinit", c_double), ("U", c_double), ("taustf", c_double),
-                ("taustd", c_double), ("Cp", c_double), ("Cd", c_double),
-                ("HAGA", c_bool)]  # https://stackoverflow.com/a/23248168/5623100]
+                ("taustd", c_double), ("Cp", c_double), ("Cd", c_double), ("HAGA", c_bool),
+                ("symmetric", c_bool)]  # https://stackoverflow.com/a/23248168/5623100]
 
 
 class retParams(Structure):
@@ -36,7 +36,8 @@ class retParams(Structure):
                 ("g", c_double), ("itauh", c_int), ("hsd", c_double), ("hh", c_double), ("Ip", c_double),
                 ("a", c_double), ("xEinit", c_double), ("xIinit", c_double), ("tinit", c_double), ("Jmin", c_double),
                 ("Jmax", c_double), ("Cp", c_double), ("Cd", c_double), ("SNE", c_int), ("SNI", c_int), ("NEa", c_int),
-                ("t", c_double), ("U", c_double), ("taustf", c_double), ("taustd", c_double), ("HAGA", c_bool)]
+                ("t", c_double), ("U", c_double), ("taustf", c_double), ("taustd", c_double), ("HAGA", c_bool),
+                ("symmetric", c_bool)]
 
 
 class cClassOne(object):
@@ -106,6 +107,12 @@ class cClassOne(object):
 
         lib.get_STDP.argtypes = [c_void_p]  # takes no args
         lib.get_STDP.restype = c_bool  # returns a void pointer
+
+        lib.set_symmetric.argtypes = [c_void_p, c_bool]  # takes no args
+        lib.set_symmetric.restype = c_void_p  # returns a void pointer
+
+        lib.get_symmetric.argtypes = [c_void_p]  # takes no args
+        lib.get_symmetric.restype = c_bool  # returns a void pointer
 
         lib.set_homeostatic.argtypes = [c_void_p, c_bool]  # takes no args
         lib.set_homeostatic.restype = c_void_p  # returns a void pointer
@@ -226,6 +233,12 @@ class cClassOne(object):
 
     def get_STDP(self):
         return lib.get_STDP(self.obj)
+
+    def set_symmetric(self, _symmetric):
+        lib.set_symmetric(self.obj, _symmetric)
+
+    def get_symmetric(self):
+        return lib.get_symmetric(self.obj)
 
     def set_homeostatic(self, _homeostatic):
         lib.set_homeostatic(self.obj, _homeostatic)

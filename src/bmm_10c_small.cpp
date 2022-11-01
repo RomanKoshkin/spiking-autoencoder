@@ -96,7 +96,11 @@ void Model::sim(int interval) {
                 }
 
                 if (STDPon) {
-                    STDP(i);
+                    if (symmetric) {
+                        STDP(i);
+                    } else {
+                        symSTDP(i);
+                    }
                 }
 
                 if (i > NE - NEo) {
@@ -461,6 +465,10 @@ void setStimIntensity(Model* m, double* _stimIntensity) {
 }
 
 void set_Ip(Model* m, double _Ip) { (m->Ip) = _Ip; }
+
+void set_symmetric(Model* m, bool _symmetric) { (m->symmetric) = _symmetric; }
+
+bool get_symmetric(Model* m, bool _symmetric) { return m->symmetric; }
 
 void set_STDP(Model* m, bool _STDPon) { (m->STDPon) = _STDPon; }
 

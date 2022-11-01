@@ -739,36 +739,72 @@ def linearToGrid(A, i):
     return A[i][1], A[i][2]
 
 
-def compute_weight_bias(W):
+@njit
+def getVF(WW):
     """
+    Args: WW - weight matrix (400, 400)
     for each neuron, find immediate spatial neighbors (8), get weights to these
     neurons as direction vectors, return the sum of those eight spatial vectors
     Assumes that the weight matrix is 400 x 400
     """
+    A = np.arange(400).reshape(20, 20)  # maps neurons on a 2D plane to thier IDs in the network
 
-    A = np.arange(400).reshape(20, 20)
+    # displacements from the center (i, j), (row, column)
+    disps = [(0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1)]
+    disps = [np.array(d) for d in disps]
 
-    X = np.zeros((20, 20))
-    Y = np.zeros((20, 20))
+    # angles to the neighbors
+    phis = [np.radians(i) for i in np.arange(0, 360, 45)]
 
-    U = np.zeros((20, 20))
-    V = np.zeros((20, 20))
+    z = np.zeros((3, 3))  # weights of neighbors
+    J = np.zeros((3, 3))  # projecton on j of each weight vector from a neuron to its neighbors
+    I = np.zeros((3, 3))  # projecton on i of each weight vector from a neuron to its neighbors
+    J0 = np.zeros((3, 3))  # j-th coord of the origins of those projection vectors
+    I0 = np.zeros((3, 3))  # i-th coord of the origins of those projection vectors
 
-    for ci in range(20):
-        for cj in range(20):
-            center = (ci, cj)
-            z = np.zeros((3, 3))
-            for disp_i in [-1, 0, 1]:
-                for disp_j in [-1, 0, 1]:
-                    ni = ci + disp_i
-                    nj = ci + disp_j
-                    if (ni < 0) or (nj < 0) or (ni > 19) or (nj > 19):
-                        continue
-                    w = W[A[(ni, nj)], A[center]]
-                    z[disp_i + 1, disp_j + 1] = w
-            dy, dx = np.gradient(z)
-            X[ci, cj] = ci
-            Y[ci, cj] = cj
-            U[ci, cj] = dx.sum()
-            V[ci, cj] = dy.sum()
-    return X, Y, U, V
+    X, Y, U, V = np.zeros((20, 20)), np.zeros((20, 20)), np.zeros((20, 20)), np.zeros((20, 20))
+    Z = np.zeros((20, 20, 3, 3))
+
+    # magnitudes of outgoing weights (not the average weight yet)
+    II = np.zeros((20, 20, 3, 3))
+    JJ = np.zeros((20, 20, 3, 3))
+
+    # origin coordinates outgoing weights (not the average weight yet)
+    XX = np.zeros((20, 20, 3, 3))
+    YY = np.zeros((20, 20, 3, 3))
+    for i in range(20):
+        for j in range(20):
+            XX[i, j, :, :] = np.ones((3, 3)) * i  # for each neuron there are 8 neighbors
+            YY[i, j, :, :] = np.ones((3, 3)) * j
+
+    for i in range(20):
+        for j in range(20):
+            z *= 0
+            J *= 0
+            I *= 0
+            J0 *= 0
+            I0 *= 0
+
+            fr = np.array([i, j])
+
+            for d, phi in zip(disps, phis):
+                a, b = d + 1  # coordinates in a 3x3 matrix (a central neuron and its neighbors (8))
+                frd = fr + d  # coordinates in the 20x20 matrix or neurons
+                I0[a, b] = i
+                J0[a, b] = j
+                if not ((np.min(frd) < 0) or (np.max(frd) >= 20)):  # skip if out of the 20x20 grid
+                    w = WW[A[frd[0], frd[1]], A[fr[0], fr[1]]]
+                    z[a, b] = w
+                    I0[a, b] = i
+                    J0[a, b] = j
+                    I[a, b] = w * np.cos(phi)
+                    J[a, b] = w * np.sin(phi)
+
+            Z[i, j, :, :] = z
+            II[i, j, :, :] = I
+            JJ[i, j, :, :] = J
+            X[i, j] = i
+            Y[i, j] = j
+            U[i, j] = I.sum()
+            V[i, j] = J.sum()
+    return X, Y, U, V, XX, YY, II, JJ, Z
