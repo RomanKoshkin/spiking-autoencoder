@@ -21,7 +21,7 @@ import networkx as nx
 from sklearn.cluster import SpectralClustering
 from scipy.sparse import csgraph
 
-from sknetwork.clustering import Louvain, modularity
+# from sknetwork.clustering import Louvain, modularity
 
 
 class HiddenPrints:

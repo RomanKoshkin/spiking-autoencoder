@@ -1,3 +1,8 @@
+# LATEST
+- now fixed reward logging and stimulation on reward (???)
+- `sh make_video.sh` converts data snapshots in tmp/ to .png files in assets/ (using multiprocessing), makes a video to videos/ and purges both the data snapshots in tmp/ and pictures in assets/.
+- the fact that I don't have to make pictures at every data snapshot speeds up the simulation, the pictures are generated on multiple cores, which is way more efficient.
+
 # TODO
 
 - try changing the speed of the ball in network time (step between the snapshots)
@@ -19,3 +24,9 @@ See if activity of a group of briefly stimulated neurons propagates.
 
 - Kick-start the network by turning on the paddle
 - after the ball produces activity reliably, you can turn off the paddle.
+
+## Exp2 - Set EE weights to some uniform value
+- Still no particular direction of the vector field after a constant unidirectinal movement of the ball
+- With uniform EE weights (set at 0.2), you need at least 3s with `paddle_on=True` to jump-start the network activity
+- the weights do get biased in the direction opposite to the ball's movement
+

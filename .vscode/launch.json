@@ -9,7 +9,8 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",
         },
         {
             "name": "CODElldb", // make sure you have the CODElldb package (Vadim Chugunov) first

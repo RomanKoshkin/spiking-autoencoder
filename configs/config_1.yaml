@@ -44,3 +44,18 @@ taustd: 350.0 # STP: STD time constant <<<<<<<<<
 Cp: 0.14 # ?? 
 Cd: 0.02 #  ??
 HAGA: true
+symmetric: true
+
+# these are not passed to 'model.setParams()', but are passed to the model constructor:
+NEo: 0
+NE: 460
+NM: 60   # out of NE excitatory neurons, NM are motor neurons
+NI: 92
+dt: 0.01
+case: 3
+wide: true
+
+# environment parameters:
+gauss: True
+sigma: 0.5
+decision_margin: 0.01

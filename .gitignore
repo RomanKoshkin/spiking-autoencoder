@@ -9,8 +9,9 @@ BMM_SEQ_STIM*
 *DSPTS_*
 *SPTS_*
 *X_*
-*.p
-*.png
-*.mp4
+tmp/*.p
+assets/*.png
+videos/*.mp4
 */wandb
 */__pycache__/*
+*tar.gz

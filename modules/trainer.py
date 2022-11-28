@@ -8,11 +8,13 @@ from modules.utils import *
 
 class Trainer(object):
 
-    def __init__(self, m, NE, stim_electrodes):
+    def __init__(self, m, NE, NM, stim_electrodes, config=None):
         self.NE = NE
+        self.NM = NM
         self.m = m
         self.stim_electrodes = stim_electrodes
-        self.env = InfinitePong(visible=False)
+        self.env = InfinitePong(visible=False, config=config)
+        self.decision_margin = config['decision_margin'] if config is not None else 0
 
         self.WgtEvo = []
         self.FEvo = []
@@ -20,6 +22,9 @@ class Trainer(object):
         self.MOD = []
         self.prev_degree = None
         removeFilesInFolder('../assets/')  # delete old frames
+        self.config = config
+        self.UP, self.DOWN, self.T, self.ACTION, = [], [], [], []
+        self.REWARD, self.REWARD_T = [], []
 
     def on_reward(self):
         x = np.ones((self.NE,)).astype('int32')
@@ -35,16 +40,20 @@ class Trainer(object):
             else:
                 pass
 
-            for i in range(16):
+            for i in range(10):
                 x1 = np.zeros((self.NE,))
                 x1[:400] = stimpat.flatten()
                 self.m.setStimIntensity(x1)
-                self.m.sim(500)
+                self.m.sim(5000)
+                self.REWARD_T.append(self.m.getState().t)
+                self.REWARD.append(self.reward)
                 self._snapshot(x1[:400].reshape(20, 20))
 
                 x1 = np.zeros((self.NE,))
                 self.m.setStimIntensity(x1)
-                self.m.sim(2000)
+                self.m.sim(5000)
+                self.REWARD_T.append(self.m.getState().t)
+                self.REWARD.append(self.reward)
                 self._snapshot(x1[:400].reshape(20, 20))
             return stimpat
 
@@ -58,16 +67,20 @@ class Trainer(object):
             else:
                 pass
 
-            for i in range(10):
+            for i in range(1):
                 x1 = np.zeros((self.NE,))
                 x1[:400] = stimpat.flatten()
                 self.m.setStimIntensity(x1)
-                self.m.sim(500)
+                self.m.sim(5000)
+                self.REWARD_T.append(self.m.getState().t)
+                self.REWARD.append(self.reward)
                 self._snapshot(x1[:400].reshape(20, 20))
 
                 x1 = np.zeros((self.NE,))
                 self.m.setStimIntensity(x1)
-                self.m.sim(500)
+                self.m.sim(5000)
+                self.REWARD_T.append(self.m.getState().t)
+                self.REWARD.append(self.reward)
                 self._snapshot(x1[:400].reshape(20, 20))
             return stimpat
         return None
@@ -76,22 +89,31 @@ class Trainer(object):
         x1 = np.zeros((self.NE,), dtype=np.float64)
         x1[:400] = im.flatten()
         self.m.setStimIntensity(x1)
-        self.m.sim(5000)
-        self._snapshot(im)
+        # simulate for 5000 ms, but take a snapshot every 500 ms
+        for i in range(1):
+            self.m.sim(5000)
+            self.REWARD_T.append(self.m.getState().t)
+            self.REWARD.append(self.reward)
+            if self.reward == 1:
+                pass
+            self._snapshot(im)
         return im
 
     def _snapshot(self, im):
         activity = self.m.getRecents()[:400].reshape(20, 20)
         W = np.copy(self.m.getWeights())[:self.NE, :self.NE]
-        w_, labels, counts, mod, newids = clusterize(W)  # <<<<<<< !!!!!!!!!!!
-        t = self.m.getState().t
-        self.pbar.set_description(
-            f'Time : {t/1000:.2f} s, mod: {mod:.2f}, N: {len(np.unique(labels))}, a: {self.action}, rw: {self.reward}')
+        # w_, labels, counts, mod, newids = clusterize(W)  # <<<<<<< !!!!!!!!!!!
+        # t = self.m.getState().t
+        # self.pbar.set_description(
+        #     f'Time : {t/1000:.2f} s, mod: {mod:.2f}, N: {len(np.unique(labels))}, a: {self.action}, rw: {self.reward}')
 
-        self.WgtEvo.append(calcAssWgts(t, self.m, labels))
-        self.FEvo.append(calcF(t, self.m, labels))
-        self.DEvo.append(calcD(t, self.m, labels))
-        self.MOD.append(mod)
+        # self.WgtEvo.append(calcAssWgts(t, self.m, labels))
+        # self.FEvo.append(calcF(t, self.m, labels))
+        # self.DEvo.append(calcD(t, self.m, labels))
+        # self.MOD.append(mod)
+
+        t = self.m.getState().t
+        self.pbar.set_description(f'Time : {t/1000:.2f} s, a: {self.action}, rw: {self.reward}')
 
         indegrees = W[:400, :400].sum(axis=1).reshape(20, 20)
         outdegrees = W[:400, :400].sum(axis=0).reshape(20, 20)
@@ -104,58 +126,68 @@ class Trainer(object):
 
         X, Y, U, V, XX, YY, II, JJ, Z = getVF(W[:400, :400])
 
-        _, ax = plt.subplots(1, 4, figsize=(17, 4), sharey=True)
-        _ = ax[0].imshow(im)
-        _ = ax[0].set_title('stimulus')
+        normalized_degree = degree / degree.max()
+        derivativeOrDegree = degree_diff / degree_diff.max()
 
-        ax[1].quiver(X, Y, U, V, color='red', width=0.01)
-        ax[1].quiver(XX.flatten(), YY.flatten(), II.flatten(), JJ.flatten(), color='yellow', alpha=0.3, width=0.005)
-        _ = ax[1].imshow(activity)
+        state_dict = dict(
+            im=im,
+            activity=activity,
+            UP=self.UP,
+            DOWN=self.DOWN,
+            T=self.T,
+            ACTION=self.ACTION,
+            REWARD_T=self.REWARD_T,
+            REWARD=self.REWARD,
+            reward=self.reward,
+            action=self.action,
+            normalized_degree=normalized_degree,
+            derivativeOrDegree=derivativeOrDegree,
+            X=X,
+            Y=Y,
+            U=U,
+            V=V,
+            XX=XX,
+            YY=YY,
+            II=II,
+            JJ=JJ,
+            Z=Z,
+            stepid=self.env.env.stepid,
+            t=self.m.getState().t,
+        )
+        with open(f"../tmp/state_dict_{int(self.m.getState().t*100):09d}.p", "wb") as f:
+            pickle.dump(state_dict, file=f)
 
-        ax[1].grid()
-        ax[1].set_xticks([0., 5., 10., 15., 20.])
-        ax[1].set_yticks([0., 5., 10., 15., 20.])
-        ax[1].set_xlim(0, 19.5)
-        ax[1].set_ylim(0, 19.5)
-        ax[1].invert_yaxis()
-        ax[1].set_title('low-passed activity')
+    def get_action(self):
+        # NOTE: get the recent activity of motor nerons
+        motor_activity = self.m.getRecents()[self.NE - self.NM:self.NE].copy()
+        up, down = (i.mean() for i in np.split(motor_activity, 2))
+        up, down = self.softmax([up, down])
+        go_up = up - down > self.decision_margin
+        go_down = (down - up > self.decision_margin)
+        if go_up:
+            return up, down, -1
+        elif go_down:
+            return up, down, 1
+        else:
+            return up, down, 0
 
-        # _ = ax[1].quiver(X, Y, U, V, scale=5, color='red')
-        # _ = ax[1].quiver(
-        #     XX.flatten(),
-        #     YY.flatten(),
-        #     II.flatten(),
-        #     JJ.flatten(),
-        #     scale=5,
-        #     color='gray',
-        #     alpha=0.6,
-        # )
-        # _ = ax[1].imshow(activity)
-        # ax[1].set_xlim(0, 20)
-        # ax[1].set_ylim(0, 20)
-        # ax[1].invert_yaxis()
-        # ax[1].grid()
-        # _ = ax[1].set_title('low-passed activity')
-
-        _ = ax[2].imshow(degree / degree.max())
-        _ = ax[2].set_title('degree')
-
-        _ = ax[3].imshow(degree_diff / degree_diff.max())
-        _ = ax[3].set_title('deriv. of degree')
-
-        _title = (f'{self.m.getState().t:.2f} step: {self.env.env.stepid}' +
-                  f'mod: {mod:.2f}, action {self.action}, rw: {self.reward}')
-        _ = ax[1].set_title(_title)
-        _ = plt.savefig(f'../assets/activity_{int(self.m.getState().t*100):09d}.png', dpi=200)
-        _ = plt.close()
+    @staticmethod
+    def softmax(x):
+        return np.exp(x) / sum(np.exp(x))
 
     def train(self, nsteps):
 
         self.pbar = trange(nsteps, desc=f'Time : {self.m.getState().t:.2f}', bar_format=bar_format)  # 2000 for 400 s
         for self.i in self.pbar:
             try:
-                self.action = np.random.choice([-1, 0, 1])
+                up, down, self.action = self.get_action()
+                self.UP.append(up)
+                self.DOWN.append(down)
+                self.T.append(self.m.getState().t)
+                self.ACTION.append(self.action)
+                # self.action = np.random.choice([-1, 0, 1])
                 im, xpos, ypos, self.reward = self.env.step(action=self.action, gauss=True)
+
                 if self.reward == 0:
                     _ = self.on_sensory(im)
                 else:

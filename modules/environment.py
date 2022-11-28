@@ -1,4 +1,7 @@
 import numpy as np
+# import matplotlib
+
+# matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import time, math
 from scipy.ndimage import gaussian_filter
@@ -14,9 +17,10 @@ class Pong(object):
         paddle_width=3,
         restart=False,
         visible=True,
+        config=None,
     ):
         self.visible = visible
-        self.sigma = 1
+        self.sigma = config['sigma'] if config is not None else 1
         self.gridsize = gridsize
         self.max_x = gridsize - 1
         self.max_y = gridsize - 1
@@ -24,6 +28,7 @@ class Pong(object):
         self.paddle_len = paddle_len
         self.paddle_width = paddle_width
         self.restart_on_right_bounce = restart
+        self.bounceOffLeftEvenIfMissPaddle = False
 
         self.paddle_t = self.max_y // 2 - self.paddle_len // 2
         self.paddle_b = self.max_y // 2 + self.paddle_len // 2
@@ -36,8 +41,8 @@ class Pong(object):
 
     def _start_rollout(self):
 
-        self.phi = math.radians(45)  #math.radians(np.random.choice(np.arange(60) - 30))
-        self._intercept = 3  #np.random.choice(self.gridsize)
+        self.phi = math.radians(-45)  #math.radians(np.random.choice(np.arange(60) - 30))
+        self._intercept = 19  #np.random.choice(self.gridsize)
         self.y = self._intercept
         self.x = self.max_x
 
@@ -72,12 +77,13 @@ class Pong(object):
                 self._intercept = self.y
                 if self.paddle_on:
                     reward = -1
-                self._xreverse *= -1
+                # self._xreverse *= -1 # NOTE: bounce off the left wall regardless
+                end = True
 
-            if np.round(self.x) == 0:
-                self._intercept = self.y
-                self.x = 0
-                if not self.paddle_on:
+            if self.bounceOffLeftEvenIfMissPaddle:
+                if np.round(self.x) == 0:
+                    self._intercept = self.y
+                    self.x = 0
                     self._xreverse *= -1
 
             # end if the ball goes beyond the right wall:
@@ -100,7 +106,7 @@ class Pong(object):
                 self._intercept = self.y
                 self._yreverse *= -1
 
-            if self.paddle_on:
+            if not end and self.paddle_on:
                 # move the paddle up
                 if action == -1:
                     self.paddle_b -= 1
@@ -164,17 +170,26 @@ class Pong(object):
 
 class InfinitePong(object):
 
-    def __init__(self, visible=True):
-        self.env = Pong(gridsize=20, speed=1, paddle_len=6, paddle_width=1, restart=True, visible=visible)
+    def __init__(self, visible=True, config=None):
+        self.env = Pong(
+            gridsize=20,
+            speed=1,
+            paddle_len=6,
+            paddle_width=1,
+            restart=True,
+            visible=visible,
+            config=config,
+        )
         self.end = False
         self.reward = 0
         self.visible = visible
+        self.gauss = config['gauss'] if config is not None else True
 
     def step(self, action=0, gauss=True):
         # call this every 50 ms of model time
         self.reward, self.end = self.env.step(action=action)
 
-        im = self.env.render(reward=self.reward, gauss=gauss)
+        im = self.env.render(reward=self.reward, gauss=self.gauss)
 
         if self.visible:
             if self.end:
@@ -187,4 +202,10 @@ class InfinitePong(object):
         return im, self.env.x, self.env.y, self.reward
 
 
-# env = InfinitePong(visible=True)
+# NOTE: if you need to debug this module
+if __name__ == "__main__":
+    env = InfinitePong(visible=True)
+    env.env.paddle_on = True
+    env.env.bounceOffLeftEvenIfMissPaddle = False
+    for i in range(200):
+        im, xpos, ypos, reward = env.step(action=1, gauss=True)

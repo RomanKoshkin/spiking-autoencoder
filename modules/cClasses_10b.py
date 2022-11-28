@@ -6,6 +6,7 @@ from termcolor import cprint
 
 cprint(os.getcwd(), color='yellow')
 lib = cdll.LoadLibrary('../modules/bmm.dylib')
+# lib = cdll.LoadLibrary('modules/bmm.dylib')
 
 # here we CREATE A CUSTOM C TYPE
 # StimMat = c_double * 12 # here you must specify the size
@@ -308,3 +309,28 @@ class cClassOne(object):
     def getRecents(self):
         resp = lib.getRecents(self.obj)
         return resp
+
+    # def __setattr__(self, name, value):
+    #     typ = [t for n, t in self.params_c_obj._fields_ if n == name][0]
+    #     typstr = typ.__name__
+
+    #     if typstr == 'c_int':
+    #         self.params_c_obj.__setattr__(name, typ, c_int(value))
+    #     # if the current field must be c_double
+    #     elif typstr == 'c_double':
+    #         self.params_c_obj.__setattr__(name, c_double(value))
+    #     # if the current field must be c_bool
+    #     elif typstr == 'c_bool':
+    #         self.params_c_obj.__setattr__(name, c_bool(value))
+    #     else:
+    #         raise TypeError(f"Can't cast {name} to {typstr}.")
+
+    #     lib.setParams(self.obj, self.params_c_obj)
+
+    # def __getattr__(self, name):
+    #     resp = lib.getState(self.obj)
+    #     return getattr(resp, name)
+
+
+if __name__ == "__main__":
+    m = cClassOne(460, 92, 0, 6347)
