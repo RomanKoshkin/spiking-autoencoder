@@ -5,7 +5,7 @@ import numpy as np
 from termcolor import cprint
 
 cprint(os.getcwd(), color='yellow')
-lib = cdll.LoadLibrary('../modules/bmm.dylib')
+lib = cdll.LoadLibrary('modules/bmm.dylib')
 # lib = cdll.LoadLibrary('modules/bmm.dylib')
 
 # here we CREATE A CUSTOM C TYPE
@@ -175,16 +175,16 @@ class cClassOne(object):
 
     # the order of keys defined in cluster.py IS IMPORTANT for the cClasses not to break down
     def setParams(self, params):
-        for key, typ in zip(params.keys(), self.params_c_obj._fields_):
-
+        for key, typ in dict(self.params_c_obj._fields_).items():
+            typename = typ.__name__
             # if the current field must be c_int
-            if typ[1].__name__ == 'c_int':
+            if typename == 'c_int':
                 setattr(self.params_c_obj, key, c_int(params[key]))
             # if the current field must be c_double
-            if typ[1].__name__ == 'c_double':
+            if typename == 'c_double':
                 setattr(self.params_c_obj, key, c_double(params[key]))
             # if the current field must be c_bool
-            if typ[1].__name__ == 'c_bool':
+            if typename == 'c_bool':
                 setattr(self.params_c_obj, key, c_bool(params[key]))
         lib.setParams(self.obj, self.params_c_obj)
 

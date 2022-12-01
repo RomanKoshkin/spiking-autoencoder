@@ -4,6 +4,8 @@ from tqdm import trange
 from modules.environment import InfinitePong
 from modules.constants import bar_format
 from modules.utils import *
+from modules.video_utils import make_frame
+import threading
 
 
 class Trainer(object):
@@ -21,7 +23,8 @@ class Trainer(object):
         self.DEvo = []
         self.MOD = []
         self.prev_degree = None
-        removeFilesInFolder('../assets/')  # delete old frames
+        removeFilesInFolder('assets/')  # delete old frames
+        removeFilesInFolder('tmp/')  # delete old frames
         self.config = config
         self.UP, self.DOWN, self.T, self.ACTION, = [], [], [], []
         self.REWARD, self.REWARD_T = [], []
@@ -61,9 +64,9 @@ class Trainer(object):
             # FIXME: this must be a predictable stim
             stimpat = np.zeros((400,), dtype=np.float64)
             if len(self.stim_electrodes) > 3:
-                stim_electrodes = np.random.choice(self.stim_electrodes, 4, replace=False)
+                stim_electrodes = np.arange(3, 400, 6)
                 stimpat[stim_electrodes] = 2
-                stimpat = gaussian_filter(stimpat.reshape(20, 20), sigma=1)
+                stimpat = gaussian_filter(stimpat.reshape(20, 20), sigma=1.0)
             else:
                 pass
 
@@ -154,8 +157,10 @@ class Trainer(object):
             stepid=self.env.env.stepid,
             t=self.m.getState().t,
         )
-        with open(f"../tmp/state_dict_{int(self.m.getState().t*100):09d}.p", "wb") as f:
+        fname = f"tmp/state_dict_{int(self.m.getState().t*100):09d}.p"
+        with open(fname, "wb") as f:
             pickle.dump(state_dict, file=f)
+        # threading.Thread(group=None, target=make_frame, args=(fname,)).start()
 
     def get_action(self):
         # NOTE: get the recent activity of motor nerons

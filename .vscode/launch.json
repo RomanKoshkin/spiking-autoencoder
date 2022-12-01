@@ -61,14 +61,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "1",
-                "1", // HAGA
-                "0.2",
-                "1800",
-                "1",
-                "0",
-                "0",
-                "buck"
+                "--config=configs/config_1.yaml",
             ]
         },
         {

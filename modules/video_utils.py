@@ -1,7 +1,13 @@
+import sys
+
+sys.path.append('../')
 from multiprocessing import Pool
 import pickle, os
 import matplotlib.pyplot as plt
-from constants import bar_format
+try:
+    from constants import bar_format
+except:
+    from modules.constants import bar_format
 from tqdm import tqdm
 
 

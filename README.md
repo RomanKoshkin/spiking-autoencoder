@@ -2,6 +2,11 @@
 - now fixed reward logging and stimulation on reward (???)
 - `sh make_video.sh` converts data snapshots in tmp/ to .png files in assets/ (using multiprocessing), makes a video to videos/ and purges both the data snapshots in tmp/ and pictures in assets/.
 - the fact that I don't have to make pictures at every data snapshot speeds up the simulation, the pictures are generated on multiple cores, which is way more efficient.
+- `run.py` - runs the experiment. Don't forget to `cd notebooks`.
+
+# Usage
+`cd notebooks && python run.py`
+`cd scripts && sh make_video.sh`
 
 # TODO
 
