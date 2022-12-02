@@ -29,6 +29,15 @@ class Trainer(object):
         self.UP, self.DOWN, self.T, self.ACTION, = [], [], [], []
         self.REWARD, self.REWARD_T = [], []
 
+    def update_state_memory(self):
+        self.REWARD_T.append(self.m.getState().t)
+        self.REWARD.append(self.reward)
+        up, down, _ = self.get_action()
+        self.UP.append(up)
+        self.DOWN.append(down)
+        self.T.append(self.m.getState().t)
+        self.ACTION.append(self.action)
+
     def on_reward(self):
         x = np.ones((self.NE,)).astype('int32')
         self.m.setStim(x)
@@ -48,15 +57,13 @@ class Trainer(object):
                 x1[:400] = stimpat.flatten()
                 self.m.setStimIntensity(x1)
                 self.m.sim(5000)
-                self.REWARD_T.append(self.m.getState().t)
-                self.REWARD.append(self.reward)
+                self.update_state_memory()
                 self._snapshot(x1[:400].reshape(20, 20))
 
                 x1 = np.zeros((self.NE,))
                 self.m.setStimIntensity(x1)
                 self.m.sim(5000)
-                self.REWARD_T.append(self.m.getState().t)
-                self.REWARD.append(self.reward)
+                self.update_state_memory()
                 self._snapshot(x1[:400].reshape(20, 20))
             return stimpat
 
@@ -75,15 +82,13 @@ class Trainer(object):
                 x1[:400] = stimpat.flatten()
                 self.m.setStimIntensity(x1)
                 self.m.sim(5000)
-                self.REWARD_T.append(self.m.getState().t)
-                self.REWARD.append(self.reward)
+                self.update_state_memory()
                 self._snapshot(x1[:400].reshape(20, 20))
 
                 x1 = np.zeros((self.NE,))
                 self.m.setStimIntensity(x1)
                 self.m.sim(5000)
-                self.REWARD_T.append(self.m.getState().t)
-                self.REWARD.append(self.reward)
+                self.update_state_memory()
                 self._snapshot(x1[:400].reshape(20, 20))
             return stimpat
         return None
@@ -95,8 +100,7 @@ class Trainer(object):
         # simulate for 5000 ms, but take a snapshot every 500 ms
         for i in range(1):
             self.m.sim(5000)
-            self.REWARD_T.append(self.m.getState().t)
-            self.REWARD.append(self.reward)
+            self.update_state_memory()
             if self.reward == 1:
                 pass
             self._snapshot(im)
@@ -185,12 +189,9 @@ class Trainer(object):
         self.pbar = trange(nsteps, desc=f'Time : {self.m.getState().t:.2f}', bar_format=bar_format)  # 2000 for 400 s
         for self.i in self.pbar:
             try:
-                up, down, self.action = self.get_action()
-                self.UP.append(up)
-                self.DOWN.append(down)
-                self.T.append(self.m.getState().t)
-                self.ACTION.append(self.action)
+
                 # self.action = np.random.choice([-1, 0, 1])
+                _, _, self.action = self.get_action()
                 im, xpos, ypos, self.reward = self.env.step(action=self.action, gauss=True)
 
                 if self.reward == 0:

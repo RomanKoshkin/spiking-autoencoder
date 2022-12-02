@@ -5,7 +5,7 @@
 - `run.py` - runs the experiment. Don't forget to `cd notebooks`.
 
 # Usage
-`cd notebooks && python run.py`
+`python run.py --config=configs/config_1.yaml`
 `cd scripts && sh make_video.sh`
 
 # TODO
