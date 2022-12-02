@@ -18,6 +18,8 @@ class Trainer(object):
         self.env = InfinitePong(visible=False, config=config)
         self.decision_margin = config['decision_margin'] if config is not None else 0
 
+        self.xpos, self.ypos, self.reward, self.paddle_ymid = 0, 0, 0, 0
+        self.XPOS, self.YPOS, self.PADDLE_YMID = [], [], []
         self.WgtEvo = []
         self.FEvo = []
         self.DEvo = []
@@ -37,6 +39,9 @@ class Trainer(object):
         self.DOWN.append(down)
         self.T.append(self.m.getState().t)
         self.ACTION.append(self.action)
+        self.XPOS.append(self.xpos)
+        self.YPOS.append(self.ypos)
+        self.PADDLE_YMID.append(self.paddle_ymid)
 
     def on_reward(self):
         x = np.ones((self.NE,)).astype('int32')
@@ -145,6 +150,9 @@ class Trainer(object):
             ACTION=self.ACTION,
             REWARD_T=self.REWARD_T,
             REWARD=self.REWARD,
+            XPOS=self.XPOS,
+            YPOS=self.YPOS,
+            PADDLE_YMID=self.PADDLE_YMID,
             reward=self.reward,
             action=self.action,
             normalized_degree=normalized_degree,
@@ -192,7 +200,10 @@ class Trainer(object):
 
                 # self.action = np.random.choice([-1, 0, 1])
                 _, _, self.action = self.get_action()
-                im, xpos, ypos, self.reward = self.env.step(action=self.action, gauss=True)
+                im, self.xpos, self.ypos, self.reward, self.paddle_ymid = self.env.step(
+                    action=self.action,
+                    gauss=True,
+                )
 
                 if self.reward == 0:
                     _ = self.on_sensory(im)

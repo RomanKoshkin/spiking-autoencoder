@@ -199,8 +199,8 @@ class InfinitePong(object):
                 print('miss')
             else:
                 pass
-
-        return im, self.env.x, self.env.y, self.reward
+        paddle_ymid = np.mean([self.env.paddle_b, self.env.paddle_t])
+        return im, self.env.x, self.env.y, self.reward, paddle_ymid
 
 
 # NOTE: if you need to debug this module
@@ -209,4 +209,4 @@ if __name__ == "__main__":
     env.env.paddle_on = True
     env.env.bounceOffLeftEvenIfMissPaddle = False
     for i in range(200):
-        im, xpos, ypos, reward = env.step(action=1, gauss=True)
+        im, xpos, ypos, reward, paddle_ymid = env.step(action=1, gauss=True)

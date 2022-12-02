@@ -41,4 +41,4 @@ if __name__ == '__main__':
 
     trainer.env.env.paddle_on = True
 
-    trainer.train(4000)
+    trainer.train(params['niter'])

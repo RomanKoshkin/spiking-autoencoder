@@ -1,5 +1,3 @@
-# the order of keys IS IMPORTANT for the cClasses not to break down
-
 alpha: 50.0 # Degree of log-STDP (50.0)
 JEI: 0.15 # 0.15 or 0.20
 T: 1800000 # simulation time ms

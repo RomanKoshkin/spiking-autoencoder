@@ -1,5 +1,7 @@
 # LATEST
-- now fixed reward logging and stimulation on reward (???)
+- metric: EMA of reward 
+- metric: correlation of the paddle middle and the ball's y-position
+- fixed reward logging and stimulation on reward
 - `sh make_video.sh` converts data snapshots in tmp/ to .png files in assets/ (using multiprocessing), makes a video to videos/ and purges both the data snapshots in tmp/ and pictures in assets/.
 - the fact that I don't have to make pictures at every data snapshot speeds up the simulation, the pictures are generated on multiple cores, which is way more efficient.
 - `run.py` - runs the experiment. Don't forget to `cd notebooks`.
@@ -10,6 +12,7 @@
 
 # TODO
 
+- log the ball's position in the state_dict
 - try changing the speed of the ball in network time (step between the snapshots)
 - try a denser weight matrix
 - try disinhibiting the network

@@ -7,9 +7,9 @@ args = None
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Speech decoding by MetaAI reimplementation")
+    parser = argparse.ArgumentParser(description="Dishbrain simulator")
     parser.add_argument("--config", default=None, help="Config file to use (see configs dir)")
-    parser.add_argument("--F", type=int, default=512, help="Embedding dimension for both speech and M/EEG")
+    parser.add_argument("--niter", type=int, default=1000, help="Number of iterations of the simulation")
     parser.add_argument("--K", type=int, default=32, help="Number of harmonics in fourier space for spatial attention")
     # parser.add_argument("--wav2vec-model", type=str, default="xlsr_53_56k", help="Type of wav2vec2.0 model to use")
     # parser.add_argument("--reproducible", action='store_true', help="Seed everything")
