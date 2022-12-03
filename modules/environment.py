@@ -30,14 +30,17 @@ class Pong(object):
         self.restart_on_right_bounce = restart
         self.bounceOffLeftEvenIfMissPaddle = False
 
-        self.paddle_t = self.max_y // 2 - self.paddle_len // 2
-        self.paddle_b = self.max_y // 2 + self.paddle_len // 2
+        self._replace_paddle()
         self.stepid = 0
         self.paddle_on = True
 
         if self.visible:
             plt.ion()
             plt.show()
+
+    def _replace_paddle(self):
+        self.paddle_t = self.max_y // 2 - self.paddle_len // 2
+        self.paddle_b = self.max_y // 2 + self.paddle_len // 2
 
     def _start_rollout(self):
 
@@ -52,6 +55,8 @@ class Pong(object):
 
         self.screen = np.zeros((self.gridsize, self.gridsize), dtype=np.float32)
         self.screen[self.y, self.x] = 1
+
+        self._replace_paddle()
 
         # print(f'phi:{self.phi} intercept: {self._intercept} paddle_t:{self.paddle_t} paddle_b: {self.paddle_b}')
 
@@ -173,11 +178,11 @@ class InfinitePong(object):
 
     def __init__(self, visible=True, config=None):
         self.env = Pong(
-            gridsize=20,
-            speed=1,
-            paddle_len=6,
-            paddle_width=1,
-            restart=True,
+            gridsize=config['gridsize'],
+            speed=config['speed'],
+            paddle_len=config['paddle_len'],
+            paddle_width=config['paddle_width'],
+            restart=config['restart'],
             visible=visible,
             config=config,
         )
@@ -205,7 +210,16 @@ class InfinitePong(object):
 
 # NOTE: if you need to debug this module
 if __name__ == "__main__":
-    env = InfinitePong(visible=True)
+
+    # NOTE: debug `environment.py`.
+    # 1) use Python /w args
+    # 2) set "--config=../configs/config_1.yaml", because the cwd will be modules, not root
+    import sys
+    sys.path.append('../')
+    from configs.args import args as config
+    config = vars(config)
+
+    env = InfinitePong(visible=True, config=config)
     env.env.paddle_on = True
     env.env.bounceOffLeftEvenIfMissPaddle = False
     for i in range(200):

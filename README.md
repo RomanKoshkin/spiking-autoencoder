@@ -6,6 +6,10 @@
 - the fact that I don't have to make pictures at every data snapshot speeds up the simulation, the pictures are generated on multiple cores, which is way more efficient.
 - `run.py` - runs the experiment. Don't forget to `cd notebooks`.
 
+# Debug
+- `environment.py`: follow the instructino in the __main__ of the that file.
+- `visible=True` so you should see the game. If the terminal says "using Agg backend", just close VSCode and open it again and it should work. If you're reading this in the future, remember to enable x11 xAuth on the mac and the remote machine you're running this on.
+
 # Usage
 `python run.py --config=configs/config_1.yaml`
 `cd scripts && sh make_video.sh`
