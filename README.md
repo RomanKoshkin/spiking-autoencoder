@@ -1,3 +1,8 @@
+# Self-organization
+
+`bmm_10c_small + SelfOrg.ipynb`
+Here I want to make the network to learn a conditional distribution of stimuli commesponding to CAs in the network. I am trying to just hard-wire these into the weight structure first.
+
 # LATEST
 - metric: EMA of reward 
 - metric: correlation of the paddle middle and the ball's y-position

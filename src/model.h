@@ -461,7 +461,7 @@ Model::Model(int _NE, int _NI, int _NEo, int _cell_id) : m_mt(m_randomdevice()) 
     // ossSpike << "stp" << ".txt";
 
     // spts_fname = "spike_times_" + cell_id;
-    ofsr.open("../data/spike_times_" + std::to_string(cell_id));
+    ofsr.open("data/spike_times_" + std::to_string(cell_id));
     ofsr.precision(10);
 
     for (int i = 0; i < NE; i++) {

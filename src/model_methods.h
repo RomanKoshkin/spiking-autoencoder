@@ -116,7 +116,7 @@ void Model::saveDSPTS() {
     ofstream ofsDSPTS;
     // ofsDSPTS.open("DSPTS_" + std::to_string(cell_id) + "_" +
     // std::to_string(t));
-    ofsDSPTS.open("../data/DSPTS_" + std::to_string(cell_id));
+    ofsDSPTS.open("data/DSPTS_" + std::to_string(cell_id));
     ofsDSPTS.precision(10);
 
     for (int i = 0; i < NE; i++) {
@@ -131,7 +131,7 @@ void Model::saveDSPTS() {
 void Model::saveX() {
     ofstream ofsX;
     // ofsX.open("X_" + std::to_string(cell_id) + "_" + std::to_string(t));
-    ofsX.open("../data/X_" + std::to_string(cell_id));
+    ofsX.open("data/X_" + std::to_string(cell_id));
     ofsX.precision(10);
     ofsX << x[0];
     for (int i = 1; i < N; i++) {
@@ -144,7 +144,7 @@ void Model::loadDSPTS(string tt) {
     dspts.clear();
     deque<double> iideque;
     // ifstream file("DSPTS_" + std::to_string(cell_id) + "_" + tt);
-    ifstream file("../data/DSPTS_" + std::to_string(cell_id));
+    ifstream file("data/DSPTS_" + std::to_string(cell_id));
 
     if (!file.is_open()) {
         cout << "DSPTS file not found." << endl;
@@ -163,7 +163,7 @@ void Model::loadDSPTS(string tt) {
 void Model::loadX(string tt) {
     x.clear();
     deque<double> iideque;
-    ifstream file("../data/X_" + std::to_string(cell_id));
+    ifstream file("data/X_" + std::to_string(cell_id));
     if (!file.is_open()) {
         cout << "X file not found." << endl;
         throw "X file not found.";
@@ -506,7 +506,7 @@ void Model::saveSpts() {
     // same as above (using an iterator, but more pythonic for ... in...)
     ofstream ofsSpts;
     // ofsSpts.open("SPTS_" + to_string(cell_id) + "_" + to_string(t));
-    ofsSpts.open("../data/SPTS_" + to_string(cell_id));
+    ofsSpts.open("data/SPTS_" + to_string(cell_id));
 
     for (int spt : spts) {
         ofsSpts << spt << " ";
@@ -518,7 +518,7 @@ void Model::loadSpts(string tt) {
 
     deque<int> iideque;
     // ifstream file("SPTS_" + to_string(cell_id) + "_" + tt);
-    ifstream file("../data/SPTS_" + to_string(cell_id));
+    ifstream file("data/SPTS_" + to_string(cell_id));
 
     if (!file.is_open()) {
         cout << "SPTS file not found." << endl;

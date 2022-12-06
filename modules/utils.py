@@ -21,7 +21,7 @@ import networkx as nx
 from sklearn.cluster import SpectralClustering
 from scipy.sparse import csgraph
 
-# from sknetwork.clustering import Louvain, modularity
+from sknetwork.clustering import Louvain, modularity
 
 
 class HiddenPrints:
@@ -36,7 +36,7 @@ class HiddenPrints:
 
 
 def load_config(config_name):
-    yaml_txt = open(f'../configs/{config_name}').read()
+    yaml_txt = open(f'configs/{config_name}').read()
     return yaml.load(yaml_txt, Loader=yaml.FullLoader)
 
 

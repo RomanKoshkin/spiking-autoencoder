@@ -3,6 +3,7 @@ data/*
 experiments/*
 visualizations/*
 */.ipynb_checkpoints/*
+.ipynb_checkpoints/*
 BMM_SEQ_STIM*
 *NASS*
 *spike_times_*
