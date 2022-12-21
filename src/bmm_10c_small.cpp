@@ -164,7 +164,6 @@ void Model::sim(int interval) {
             if (homeostatic) {
                 for (int i = 0; i < NE; i++) {
                     for (const int& j : Jinidx[i]) {
-                        // ?????????? THAT'S NOT EXACTLY WHAT THE PAPER SAYS
                         k1 = (JEEh - Jo[i][j]) / tauh;
                         k2 = (JEEh - (Jo[i][j] + 0.5 * hh * k1)) / tauh;
                         k3 = (JEEh - (Jo[i][j] + 0.5 * hh * k2)) / tauh;

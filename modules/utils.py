@@ -1,6 +1,8 @@
-from itertools import chain
+from itertools import chain, groupby
+from collections import Counter
 
 import sys, time, json, yaml
+
 
 import os, pickle, shutil, warnings, shutil
 import numpy as np
@@ -20,7 +22,7 @@ from pprint import pprint
 import networkx as nx
 from sklearn.cluster import SpectralClustering
 from scipy.sparse import csgraph
-
+from collections import namedtuple
 from sknetwork.clustering import Louvain, modularity
 
 
@@ -35,8 +37,71 @@ class HiddenPrints:
         sys.stdout = self._original_stdout
 
 
-def load_config(config_name):
-    yaml_txt = open(f'configs/{config_name}').read()
+def getCondDistOfCAs(sp):
+    a = sp.copy()
+    a.spiketime -= a.spiketime.min()
+    org = pd.Timestamp(
+        year=2022,
+        month=1,
+        day=1,
+    )
+    a.index = a.apply(lambda x: org + pd.Timedelta(microseconds=int(x.spiketime * 100) * 10), axis=1)
+    b = a[a.aid != -1].aid.rolling(window='40ms').apply(lambda x: x.mode()[0])
+
+    y = [int(k) for k, g in groupby(b.to_numpy())]
+    nass = len(set(y))
+    Z = np.zeros((nass, nass))
+
+    pairs = [(y[i], y[i - 1]) for i in range(len(y) - 1)]
+    counts = Counter(pairs)
+
+    for it in pairs:
+        try:
+            Z[it] = counts[it]
+        except Exception as e:
+            print(e)
+            pprint(counts)
+    return Z
+
+
+def plotSTDP(params, ax, disp=0):
+
+    if isinstance(params, dict):
+        params = namedtuple("params", params.keys())(*params.values())
+
+    def fd(x, alpha, JEE):
+        return np.log(1 + x * alpha / JEE) / np.log(1 + alpha)
+
+    # our neuron that we focus on is at t = 0
+    current_spike_t = 0
+
+    # history of other spikes in the recurrent network (up until t = 0)
+    spts = np.linspace(-250, 0, 200)
+
+    if params.symmetric:
+        # we treat the current neuron as presynaptic, and the previous history of other spikes (spts) as postsynaptic:
+        # we depress if presyn is later than postsyn
+        dwd = params.Cp * np.exp(-(current_spike_t - spts) / params.tpp) - fd(
+            0.9, params.alpha, params.JEE) * params.Cd * np.exp(-(current_spike_t - spts) / params.tpd)
+        # we potentiate if presyn is later than postsyn
+        dwp = params.Cp * np.exp(-(current_spike_t - spts) / params.tpp) - fd(
+            0.9, params.alpha, params.JEE) * params.Cd * np.exp(-(current_spike_t - spts) / params.tpd)
+
+    else:
+        # we treat the current neuron as presynaptic, and the previous history of other spikes (spts) as postsynaptic:
+        # we depress if presyn is later than postsyn
+        dwd = -params.Cp * np.exp(-(current_spike_t - spts) /
+                                  params.tpd)  # - fd(0.1, alpha, JEE) * Cd * np.exp(-(current_spike_t - spts)/tpd)
+        # we potentiate if presyn is later than postsyn
+        dwp = params.Cp * np.exp(-(current_spike_t - spts) /
+                                 params.tpp)  # - fd(0.1, alpha, JEE) * Cd * np.exp(-(current_spike_t - spts)/tpd)
+
+    ax.plot(disp + spts - current_spike_t, dwd)
+    ax.plot(disp + current_spike_t - spts, dwp)
+
+
+def load_config(pathAndNameOfConfig):
+    yaml_txt = open(pathAndNameOfConfig).read()
     return yaml.load(yaml_txt, Loader=yaml.FullLoader)
 
 

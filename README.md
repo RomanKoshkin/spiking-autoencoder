@@ -1,7 +1,14 @@
+# GA
+I hard-wire 4 CAs, and want them to stay as long as possible. Measure stability using cross-entropy between assembly real and ideal CA transitions.
+`cd GA`
+`python runGA.py`
+Pictures will be in `GA/data`, inspect the best DNA (STDP parameters) in `bmm_10c_small + SelfOrg.ipynb`.
+
 # Self-organization
 
 `bmm_10c_small + SelfOrg.ipynb`
 Here I want to make the network to learn a conditional distribution of stimuli commesponding to CAs in the network. I am trying to just hard-wire these into the weight structure first.
+
 
 # LATEST
 - metric: EMA of reward 
