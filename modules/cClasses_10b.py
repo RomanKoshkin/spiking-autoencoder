@@ -77,6 +77,12 @@ class cClassOne(object):
         self.lib.getF.argtypes = [c_void_p]  # takes no args
         self.lib.getF.restype = ndpointer(dtype=np.float64, ndim=1, shape=(NE,))
 
+        self.lib.getUexc.argtypes = [c_void_p]  # takes no args
+        self.lib.getUexc.restype = ndpointer(dtype=np.float64, ndim=1, shape=(NE + NI,))
+
+        self.lib.getUinh.argtypes = [c_void_p]  # takes no args
+        self.lib.getUinh.restype = ndpointer(dtype=np.float64, ndim=1, shape=(NE + NI,))
+
         self.lib.getD.argtypes = [c_void_p]  # takes no args
         self.lib.getD.restype = ndpointer(dtype=c_double, ndim=1, shape=(NE,))
 
@@ -215,6 +221,16 @@ class cClassOne(object):
 
     def setD(self, D):
         self.lib.setD(self.obj, D)
+
+    def getUexc(self):
+        """ get average exitation over the last 1000 of updates """
+        resp = self.lib.getUexc(self.obj)
+        return resp
+
+    def getUinh(self):
+        """ get average exitation over the last 1000 of updates """
+        resp = self.lib.getUinh(self.obj)
+        return resp
 
     def setStim(self, stimVec):
         self.lib.setStim(self.obj, stimVec)

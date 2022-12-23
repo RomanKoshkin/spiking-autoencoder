@@ -291,6 +291,11 @@ class Model {
     vector<int> x;
     set<int> spts;
 
+    // a snapshot of membrane potential values
+    vector<deque<double>> Uinh;
+    vector<deque<double>> Uexc;
+    deque<double> fdeque;
+
     int saveflag = 0;
     double t = 0;
     int tidx = -1;
@@ -385,6 +390,8 @@ class Model {
     double* ptr_UU;
     double* ptr_theta;
     double* ptr_r;
+    double* ptr_Uexc;
+    double* ptr_Uinh;
 
     // flexible arrays can only be declared at the end of the class !!
     //         double sm[];
@@ -432,6 +439,8 @@ Model::Model(int _NE, int _NI, int _NEo, int _cell_id) : m_mt(m_randomdevice()) 
     ptr_UU = new double[NE];
     ptr_theta = new double[NE];
     ptr_r = new double[NE];
+    ptr_Uexc = new double[NE + NI];
+    ptr_Uinh = new double[NE + NI];
 
     // since no suitable conversion function from "std::vector<double,
     // std::allocator<double>>" to "double *" exists, we need to copy the
@@ -510,5 +519,10 @@ Model::Model(int _NE, int _NI, int _NEo, int _cell_id) : m_mt(m_randomdevice()) 
     // make a container for neurons' spike histories
     for (int i = 0; i < NE; i++) {
         sphist.push_back(spdeque);
+    }
+
+    for (int i = 0; i < NE + NI; i++) {
+        Uexc.push_back(fdeque);
+        Uinh.push_back(fdeque);
     }
 }

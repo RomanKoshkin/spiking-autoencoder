@@ -209,23 +209,27 @@ deque<int> Model::SplitString_int(string line) {
 }
 
 void Model::updateMembranePot(int i) {
-    // WE update the membrane potential of the chosen excitatory neuron (eq.4,
+    // WE update the membrane potential of the chosen POSTsynaptic excitatory neuron i (eq.4,
     // p.12) -threshold of update + steady exc input * mean/var of external stim
     // input
+
+    // first inject random "driving" noise
     if ((i >= NE - NEo) && (i < NE)) {
         u = -hE + IEex * (mex + sigex * ngn()) * 0.6;  // pentagon, p.12
     } else {
         u = -hE + IEex * (mex + sigex * ngn());  // pentagon, p.12
     }
 
-    // we go over all POSTsynaptic neurons that are spiking now
+    // then we go over all PREsynaptic neurons that are spiking now
     for (const auto& j : spts) {
-        // if a postsynaptic spiking neuron happens to be excitatory,
+        // if a PREsynaptic spiking neuron happens to be excitatory,
         if (j < NE) {
             u += F[j] * D[j] * Jo[i][j];
-            // if a postsynaptic spiking neuron happens to be inhibitory,
+            // if a PREsynaptic spiking neuron happens to be inhibitory,
+            Uexc[i].back() += F[j] * D[j] * Jo[i][j];
         } else {
-            u += Jo[i][j];
+            u += Jo[i][j];  // we add because the E<-I weights are negative
+            Uinh[i].back() += Jo[i][j];
         }
     }
 }

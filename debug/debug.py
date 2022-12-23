@@ -43,7 +43,7 @@ NEo = 0
 NE = 400 + NEo
 NI = 80  #157
 
-params = load_config('config_1.yaml')
+params = load_config('../configs/config_1.yaml')
 
 # override selected params to values that are good for BOTH withFD AND woFD self-organization:
 
@@ -65,7 +65,7 @@ for k, v in {
     params[k] = v
 
 # build model
-m = cClassOne(NE, NI, NEo, cell_id)
+m = cClassOne(NE, NI, NEo, cell_id, home='/home/roman/CODE/spiking-autoencoder/modules')
 m.setParams(params)
 m.saveSpikes(1)
 

@@ -66,6 +66,17 @@ void Model::sim(int interval) {
 
         // we cycle through those chosen neurons
         for (const int& i : smpld) {
+            // add a new number to the ith vector to store the membrane potential
+            // of the i-th excitatory neuron
+            Uexc[i].push_back(0.0);
+            if (Uexc[i].size() > 10) {
+                Uexc[i].pop_front();
+            }
+            Uinh[i].push_back(0.0);
+            if (Uinh[i].size() > 10) {
+                Uinh[i].pop_front();
+            }
+
             // STP (empty square, eq. 6 p.12)
             // if a chosen neuron is ALREADY on
             if (x[i] == 1) {
@@ -119,6 +130,17 @@ void Model::sim(int interval) {
 
         for (const int i_ : smpld) {
             int i = NE + i_;
+
+            // inhibitory neurons also receive excitation and inhibition
+            Uexc[i].push_back(0.0);
+            if (Uexc[i].size() > 10) {
+                Uexc[i].pop_front();
+            }
+            Uinh[i].push_back(0.0);
+            if (Uinh[i].size() > 10) {
+                Uinh[i].pop_front();
+            }
+
             /* if this inhibitory neuron is spiking we set it to zero
                   in the binary vector x and remove its index from the set
                   of currently spiking neurons */
@@ -139,6 +161,11 @@ void Model::sim(int interval) {
 
             for (const int& j : spts) {
                 u += Jo[i][j];
+                if (j < NE) {
+                    Uexc[i].back() += Jo[i][j];
+                } else {
+                    Uinh[i].back() += Jo[i][j];
+                }
             }
 
             // if the membrane potential on the currently chosen INHIBITORy
@@ -337,6 +364,28 @@ double* getD(Model* m) {
         (m->ptr_D)[i] = (double)(*arrayOfPointersVec)[i];
     }
     return m->ptr_D;
+}
+
+double* getUexc(Model* m) {
+    const int x = m->NE + m->NI;
+
+    for (int i = 0; i < x; i++) {
+        deque<double> y = (m->Uexc)[i];
+        double size = (double)y.size();
+        (m->ptr_Uexc)[i] = accumulate(y.begin(), y.end(), 0.0) / size;
+    }
+    return m->ptr_Uexc;
+}
+
+double* getUinh(Model* m) {
+    const int x = m->NE + m->NI;
+
+    for (int i = 0; i < x; i++) {
+        deque<double> y = (m->Uinh)[i];
+        double size = (double)y.size();
+        (m->ptr_Uinh)[i] = accumulate(y.begin(), y.end(), 0.0) / size;
+    }
+    return m->ptr_Uinh;
 }
 
 void setParams(Model* m, Model::ParamsStructType params) { m->setParams(params); }

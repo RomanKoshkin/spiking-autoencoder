@@ -6,6 +6,8 @@ Pictures will be in `GA/data`, inspect the best DNA (STDP parameters) in `bmm_10
 
 # Self-organization
 
+FIXME: exponentially decaying threshold for excitatory neurons
+
 `bmm_10c_small + SelfOrg.ipynb`
 Here I want to make the network to learn a conditional distribution of stimuli commesponding to CAs in the network. I am trying to just hard-wire these into the weight structure first.
 
