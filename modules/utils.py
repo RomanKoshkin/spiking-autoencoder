@@ -3,7 +3,6 @@ from collections import Counter
 
 import sys, time, json, yaml
 
-
 import os, pickle, shutil, warnings, shutil
 import numpy as np
 from multiprocessing import Pool
@@ -35,6 +34,45 @@ class HiddenPrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
         sys.stdout = self._original_stdout
+
+
+class Stimulator(object):
+
+    def __init__(self, m, stim_strength=1.0, nass=8, rotate_every_ms=20):
+        self.NE = m.getState().NE
+        assert self.NE % nass == 0, 'check ass_size relative to NE'
+        ass_size = self.NE // nass
+        self.patterns = [[i for i in range(j, j + ass_size)] for j in [k for k in range(0, self.NE, ass_size)]]
+        self.rotate_every_ms = rotate_every_ms
+
+        self.pat_ID = 0
+        self.m = m
+        self.pat_st_t = m.getState().t
+        self.stim_strength = stim_strength
+
+    def get_next(self):
+        self.pat_ID += 1
+        if self.pat_ID >= len(self.patterns):
+            self.pat_ID = 0
+        return np.array(self.patterns[self.pat_ID])
+
+    def check_if_rotate_stim(self):
+        now = self.m.getState().t
+        if now - self.pat_st_t > self.rotate_every_ms:
+            self.pat_st_t = now
+            x = np.zeros((self.NE,)).astype('int32')
+            x1 = np.zeros((self.NE,)).astype(float)
+            pat_ids = self.get_next()
+            x[pat_ids] = 1  # the trailing excitatory neurons are input neurons
+            x1[pat_ids] = self.stim_strength
+            self.m.setStim(x)
+            self.m.setStimIntensity(x1)
+
+    def sham_stim(self):
+        x = np.zeros((self.NE,)).astype('int32')
+        x1 = np.zeros((self.NE,)).astype(float)
+        self.m.setStim(x)
+        self.m.setStimIntensity(x1)
 
 
 def getCondDistOfCAs(sp):
