@@ -1,7 +1,7 @@
 from itertools import chain, groupby
 from collections import Counter
 
-import sys, time, json, yaml
+import sys, time, json, yaml, subprocess, copy
 
 import os, pickle, shutil, warnings, shutil
 import numpy as np
@@ -36,13 +36,84 @@ class HiddenPrints:
         sys.stdout = self._original_stdout
 
 
+class SlurmJobDispatcher(object):
+
+    def __init__(
+        self,
+        path_to_job_file_on_deigo,
+        path_to_job_file_from_precision,
+        job_file_name,
+        output_folder_on_slurm,
+        max_slurm_jobs,
+    ):
+        self.path_to_job_file_on_deigo = path_to_job_file_on_deigo
+        self.path_to_job_file_from_precision = path_to_job_file_from_precision
+        self.job_file_name = job_file_name
+        self.output_folder_on_slurm = output_folder_on_slurm
+        self.max_slurm_jobs = max_slurm_jobs
+        self.numOfJobsSubmitted = 0
+
+    def checkNumJobs(self):
+        """ check the number of jobs running on slurm 
+            takes about 4 s to execute
+        """
+        subproc = subprocess.Popen("ssh deigo 'squeue'", shell=True, stdout=subprocess.PIPE)
+        ret = subproc.stdout.read().decode('UTF-8').split('\n')[1:-1]
+        n_jobs_now = len(ret)
+        msg = f'Number of jobs running: {n_jobs_now}'
+        sys.stdout.write(msg)
+        sys.stdout.flush()
+        sys.stdout.write("\b" * len(msg))
+        return n_jobs_now
+
+    def MakeAJobFile(self, _dna, genID, cell_id):
+        """ compile a job file to run each job in slurm """
+
+        dna = copy.deepcopy(_dna)
+        # dna['gen'] = genID
+        # dna['cell_id'] = cell_id
+        dna_str = " ".join(f"--{k}={v}" if k not in ['script', 'program'] else f"{v}" for k, v in dna.items()) + "\n"
+        with open(f'{self.path_to_job_file_from_precision}/{self.job_file_name}', 'w') as f:
+            f.writelines("#!/bin/bash\n")
+            f.writelines(f"#SBATCH --job-name=JOBNAME1\n")
+            f.writelines(f"#SBATCH --mail-user=roman.koshkin@oist.jp\n")
+            f.writelines(f"#SBATCH --partition=short\n")
+            f.writelines(f"#SBATCH --ntasks=1\n")
+            f.writelines(f"#SBATCH --cpus-per-task=1\n")
+            f.writelines(f"#SBATCH --mem-per-cpu=1g\n")
+            f.writelines(f"#SBATCH --output=./{self.output_folder_on_slurm}/%j.out\n")
+            f.writelines(f"#SBATCH --array=1-1\n")  # submit 4 jobs as an array, give them individual id from 1 to 4
+            f.writelines(f"#SBATCH --time=0:15:00\n")
+            f.writelines(dna_str)
+            # f.writelines("python sim.py $SLURM_ARRAY_JOB_ID $SLURM_ARRAY_TASK_ID $1\n")
+
+    def runJob(self):
+        """ run a slurm job based on the file just compiled and written to deigo """
+
+        if self.numOfJobsSubmitted > int(self.max_slurm_jobs * 0.9):
+            num_unfinished_jobs = self.checkNumJobs()
+            while num_unfinished_jobs > self.max_slurm_jobs:
+                time.sleep(5)
+                num_unfinished_jobs = self.checkNumJobs()
+        commands = f'"cd {self.path_to_job_file_on_deigo} && sbatch {self.job_file_name}"'
+        os.system(f"ssh deigo {commands}")
+        self.numOfJobsSubmitted += 1
+        time.sleep(0.3)  # NOTE: sleep not to constipate the slurm scheduler
+
+    def next_job(self, dna):
+        self.MakeAJobFile(dna, None, None)
+        self.runJob()
+
+
 class Stimulator(object):
 
     def __init__(self, m, stim_strength=1.0, nass=8, rotate_every_ms=20):
         self.NE = m.getState().NE
-        assert self.NE % nass == 0, 'check ass_size relative to NE'
+        # assert self.NE % nass == 0, 'check ass_size relative to NE'
         ass_size = self.NE // nass
         self.patterns = [[i for i in range(j, j + ass_size)] for j in [k for k in range(0, self.NE, ass_size)]]
+        self.patterns = self.patterns[:nass]  # NOTE: drop the "pattern" whose id is greater than nass
+
         self.rotate_every_ms = rotate_every_ms
 
         self.pat_ID = 0

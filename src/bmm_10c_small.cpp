@@ -1,9 +1,7 @@
-// Reduced binary model of short- and long-term synaptic plasticity
-//
-// Original code by Created by Naoki Hiratani (N.Hiratani@gmail.com)
-// Comments and Python-friendly interactive implementation
+// Binary SNN under STP-dependent STDP short- and long-term synaptic plasticity
 // by Roman Koshkin (roman.koshkin@gmail.com)
-
+// Big shoutout to Naoki Hiratani (N.Hiratani@gmail.com), whose codebase I used to build this
+// project.
 // добавил alphaLTP, alphaLTD к функции STDP
 
 #include <limits.h>
@@ -113,16 +111,16 @@ void Model::sim(int interval) {
                         symSTDP(i);
                     }
                 }
-
-                if (i > NE - NEo) {
-                    theta[i] += 0.03;
+                // ????
+                if (i < NE) {
+                    theta[i] += 0.13;
                 }
             }
         }
 
         // exponentially decaying threshold for excitatory neurons
-        for (int i_ = NE - NEo; i_ < NE; i_++) {
-            theta[i_] *= 0.999;
+        for (int i_ = 0; i_ < NE; i_++) {
+            theta[i_] *= 0.99995;
         }
 
         // we sample INHIBITORY neurons to be updated at the current step

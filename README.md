@@ -1,3 +1,10 @@
+# GRID simulations (both SLURM and local)
+- run `python bat_pattern_stimulation.py` LOCALLY. Make sure you get the paths right
+- for slurm, set `slurm = True`
+- don't forget to copy the files to /flash
+- don't forget to build the c++ module from source on the target machine (use `srun ...`)
+
+
 # GA
 I hard-wire 4 CAs, and want them to stay as long as possible. Measure stability using cross-entropy between assembly real and ideal CA transitions.
 `cd GA`

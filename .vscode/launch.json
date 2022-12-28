@@ -62,7 +62,15 @@
             "cwd": "${fileDirname}",
             "console": "integratedTerminal",
             "args": [
-                "--config=configs/config_1.yaml",
+                // "--config=configs/config_1.yaml",
+                "--HAGA=0",
+                "--astrocytes=1",
+                "--runid=10",
+                "--nass=6",
+                "--stim_strength=0.15",
+                "--rotate_every_ms=20",
+                "--stim_time_ms=20000",
+                "--total_time_ms=40000"
             ]
         },
         {

@@ -2,7 +2,9 @@ import argparse, warnings
 from modules.cClasses_10b import cClassOne
 from modules.utils import *
 import numpy as np
+import pandas as pd
 from termcolor import cprint
+from tqdm import trange
 
 warnings.filterwarnings("ignore")
 
@@ -68,20 +70,57 @@ stimulator = Stimulator(
     rotate_every_ms=args.rotate_every_ms,
 )
 
-pbar = range(2000)
+# make a header for the thetas file
+d = dict()
+d['t'] = 0
+for k, pat in enumerate(stimulator.patterns):
+    d[k] = 0
+header = ",".join([str(k) for k in d.keys()]) + "\n"
+with open('data/thetas', 'w') as f:
+    f.write(header)
+
+pbar = trange(2000)
 t = m.getState().t
 
+FD = []
 for i in pbar:
     if t > args.total_time_ms:
         break
     try:
         for j in range(100):
+            # NOTE: we record spikes +- 5s around the stimulus offset
             if m.getState().t < args.stim_time_ms:
                 stimulator.check_if_rotate_stim()
                 m.sim(200)
             else:
                 stimulator.sham_stim()
                 m.sim(200)
+
+            # if the time is right, save spikes, and other stats
+            if (t > args.stim_time_ms - 5000) and (t < args.stim_time_ms + 5000):
+                m.saveSpikes(1)
+
+                # save mean assembly-wise thetas
+                theta = m.getTheta()
+                t = m.getState().t
+                d = dict()
+                d['t'] = np.round(t, 2)
+                for k, pat in enumerate(stimulator.patterns):
+                    d[k] = theta[pat].mean()
+                with open('data/thetas', 'a') as f:
+                    f.write(",".join([str(v) for v in d.values()]) + "\n")
+
+                fd = m.getF() * m.getD()
+                inh = np.copy(m.getUinh())
+                exc = np.copy(m.getUexc())
+                d = {'spiketime': m.getState().t}
+                for k, pat in enumerate(stimulator.patterns):
+                    d[f'inh_{k}'] = np.mean(inh[pat])
+                    d[f'exc_{k}'] = np.mean(exc[pat])
+                    d[f'fd_{k}'] = np.mean(fd[pat])
+                FD.append(copy.deepcopy(d))
+            else:
+                m.saveSpikes(0)
 
         if i % 1 == 0:
             W = np.copy(m.getWeights())[:NE, :NE]
@@ -97,3 +136,5 @@ for i in pbar:
     except KeyboardInterrupt:
         cprint('User interrupt', color='green')
         break
+
+    pd.DataFrame(FD).to_csv('data/inhib_exc.csv')
