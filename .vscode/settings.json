@@ -84,7 +84,8 @@
         "cerrno": "cpp",
         "ios": "cpp",
         "locale": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "filesystem": "cpp"
     },
     "python.pythonPath": "/home/roman/miniconda3/envs/__base__/bin/python",
     "python.formatting.provider": "yapf",

@@ -262,8 +262,206 @@ void Model::sim(int interval) {
                 ++it;
             }
 
-            // exit if either no neurons are spiking or too many spiking after t
-            // > 200 ms
+            // exit if no neur. are spiking or too many spiking after t > 200 ms
+            if (s == 0 || (s > 1.0 * NE && t > 200.0)) {
+                std::cout << "Exiting because either 0 or too many spikes at t =" << t << std::endl;
+                break;
+            }
+        }
+    }
+}
+
+void Model::sim_lif(int interval) {
+    // Timer timer;
+
+    // HAVING INITIALIZED THE NETWORK, WE go time step by time step
+    while (interval > 0) {
+        t += h;
+        interval -= 1;
+        neurons_that_spiked_at_this_step.clear();
+        if (t < 0.5) {
+            z = 0.03;
+        } else {
+            z = 0.003;
+        }
+
+        for (int ii = 0; ii < N; ii++) {
+            if (AP[ii] == 1) {
+                in_refractory[ii] = refractory_period + dice() * 0.1;
+            }
+
+            AP[ii] = 0;
+
+            if (abs(in_refractory[ii]) < EPSILON) {
+                delayed_spike[ii] = 1;
+            } else {
+                delayed_spike[ii] = 0;
+            }
+
+            // reset the currents(we recalculate from scratch for each neuron)
+            I_E[ii] = 0.0;
+            I_I[ii] = 0.0;
+
+            // #pragma omp parallel for private(bump, abump) num_threads(8)
+            for (int jj = 0; jj < N; jj++) {
+                if ((delayed_spike[jj] == 1) && (Jo[ii][jj] > Jepsilon) && (jj < NE)) {
+                    bump = neur_type_mask[jj] * F[jj] * D[jj] * delayed_spike[jj] * Jo[ii][jj];
+                    abump =
+                        (1.0 - neur_type_mask[jj]) * F[jj] * D[jj] * delayed_spike[jj] * Jo[ii][jj];
+                } else {
+                    bump = 0.0;
+                    abump = 0.0;
+                }
+
+                ampa[ii][jj] += (-ampa[ii][jj] / tau_ampa + bump) * h;
+                nmda[ii][jj] += (-nmda[ii][jj] / tau_nmda + bump) * h;
+                gaba[ii][jj] += (-gaba[ii][jj] / tau_gaba + abump) * h;
+
+                I_E[ii] += -ampa[ii][jj] * (V[ii] - V_E) - 0.1 * nmda[ii][jj] * (V[ii] - V_E) + z;
+                I_I[ii] += -gaba[ii][jj] * (V[ii] - V_I);
+            }
+
+            dV[ii] = (-(V[ii] - EL) / tau[ii] + I_E[ii] + I_I[ii]) * h;
+
+            if (V[ii] >= Vspike) {
+                V[ii] = Vr;
+            }
+
+            if (in_refractory[ii] > EPSILON) {
+                dV[ii] = 0.0;
+            }
+
+            V[ii] += dV[ii];
+
+            if (hStim[ii] == 1) {
+                if (dice() < stimIntensity[ii]) {
+                    V[ii] = Vth;
+                }
+            }
+
+            if (V[ii] > Vth) {
+                V[ii] = Vspike;
+                AP[ii] = 1;
+
+                if (saveflag == 1) {
+                    neurons_that_spiked_at_this_step.push_back(ii);
+                }
+
+                if (ii < NE) {
+                    STPonSpike(ii);  // STP only on E neurons
+
+                    spts.insert(ii);          // only keep track of E nurons (for STDP)
+                    dspts[ii].push_back(t);   // SHAPE: (n_postsyn x pytsyn_sp_times)
+                    x[ii] = 1;                // ??
+                    saveRecentSpikes(ii, t);  // we only keep the history of excitatory neurons
+                    if (STDPon) {
+                        if (symmetric) {
+                            STDP(ii);
+                        } else {
+                            symSTDP(ii);
+                        }
+                    }
+                }
+
+                // if (ii < NE) {
+                //     theta[ii] += 0.13;
+                // }
+            }
+            in_refractory[ii] -= h;
+        }
+
+        // dump spiketimes on ii-th neuron (to avoid multiple processes racing for file access)
+        if (saveflag == 1) {
+            for (int kk : neurons_that_spiked_at_this_step) {
+                ofsr << t << " " << kk << endl;  // record a line to file
+            }
+        }
+        STPonNoSpike();
+        // exponentially decaying threshold for excitatory neurons
+        // for (int i_ = 0; i_ < NE; i_++) {
+        //     theta[i_] *= 0.99995;
+        // }
+
+        // EVERY 10 ms homeostatic, boundary conditions, old spike removal
+        if (((int)floor(t / h)) % 1000 == 0) {
+            // Homeostatic Depression
+            if (homeostatic) {
+                for (int i = 0; i < NE; i++) {
+                    for (const int& j : Jinidx[i]) {
+                        k1 = (JEEh - Jo[i][j]) / tauh;
+                        k2 = (JEEh - (Jo[i][j] + 0.5 * hh * k1)) / tauh;
+                        k3 = (JEEh - (Jo[i][j] + 0.5 * hh * k2)) / tauh;
+                        k4 = (JEEh - (Jo[i][j] + hh * k3)) / tauh;
+                        Jo[i][j] += hh * (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0 + hsig * ngn();
+                        // we clip the weights from below and above
+                        if (Jo[i][j] < Jmin)
+                            Jo[i][j] = Jmin;  // ????? Jmin is zero, not 0.0015,
+                                              // as per Table 1
+                        if (Jo[i][j] > Jmax) Jo[i][j] = Jmax;
+                    }
+                }
+
+                // boundary condition
+                for (int i = 0; i < NE; i++) {
+                    double Jav = 0.0;
+                    for (const int& j : Jinidx[i]) {
+                        // find the total weight per each postsynaptic neuron
+                        Jav += Jo[i][j];
+                    }
+                    // find mean weight per each postsynaptic neuron
+                    Jav = Jav / ((double)Jinidx[i].size());
+                    if (Jav > Jtmax) {
+                        for (const int& j : Jinidx[i]) {
+                            // if the total weight exceeds Jtmax, we subtract
+                            // the excess value
+                            Jo[i][j] -= (Jav - Jtmax);
+                            // but if a weight is less that Jmin, we set it to
+                            // Jmin (clip from below)
+                            if (Jo[i][j] < Jmin) {
+                                Jo[i][j] = Jmin;
+                            }
+                        }
+
+                        // if the total weight is less that Jtmin
+                    } else if (Jav < Jtmin) {
+                        for (const int& j : Jinidx[i]) {
+                            /* ???????? we top up each (!!!???) weight by the
+                                          difference between the total min and current total
+                                          weight */
+                            Jo[i][j] += (Jtmin - Jav);
+                            // but if a weight is more that Jmax, we clip it to
+                            // Jmax
+                            if (Jo[i][j] > Jmax) {
+                                Jo[i][j] = Jmax;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // remove spikes older than 500 ms
+            for (int i = 0; i < NE; i++) {
+                for (int sidx = 0; sidx < dspts[i].size(); sidx++) {
+                    // if we have spike times that are occured more than 500 ms
+                    // ago, we pop them from the deque
+                    if (t - dspts[i][0] > twnd) {
+                        dspts[i].pop_front();
+                    }
+                }
+            }
+        }
+
+        // EVERY 1s
+        if (((int)floor(t / h)) % (1000 * 100) == 0) {
+            tidx += 1;  // we count the number of 1s cycles
+            int s = 0;
+            it = spts.begin();
+            while (it != spts.end()) {
+                ++s;
+                ++it;
+            }
+
+            // exit if no neur. are spiking or too many spiking after t > 200 ms
             if (s == 0 || (s > 1.0 * NE && t > 200.0)) {
                 std::cout << "Exiting because either 0 or too many spikes at t =" << t << std::endl;
                 break;
@@ -281,22 +479,23 @@ Model* createModel(int _NE, int _NI, int _NEo, int _cell_id) {
     return new Model(_NE, _NI, _NEo, _cell_id);
 }
 
-// NOTE: in progress
 double* getRecents(Model* m) {
     const int I = m->NE;  // we only need the excitatory nerons
 
     for (int i = 0; i < I; i++) {
-        int J = m->sphist[i].size();
+        int J = m->sphist[i].size();  // J is the number if presynaptic spikes
         // we have an array of pointers
-        (m->ptr_r)[i] = 0.0;  // zero the array
-        for (int j = 0; j < J; j++) {
-            // the weight of the spike will be the (exponentially) lower the older it is
-            float expw = exp(0.08 * ((m->sphist[i][j]) - (m->t)));
-            (m->ptr_r)[i] += expw;
-        }
+        (m->ptr_r)[i] = m->getRecent(i);  // zero the array
+        // (m->ptr_r)[i] = 0.0;  // zero the array
+        // for (int j = 0; j < J; j++) {
+        //     // the weight of the spike will be the (exponentially) lower the older it is
+        //     float expw = exp(0.08 * ((m->sphist[i][j]) - (m->t)));
+        //     (m->ptr_r)[i] += expw;
+        // }
     }
     return m->ptr_r;
 }
+
 void dumpSpikeStates(Model* m) {
     m->saveDSPTS();
     m->saveX();
@@ -328,6 +527,8 @@ void saveSpikes(Model* m, int _saveflag) { (m->saveflag) = _saveflag; }
 // method of that object because this is a pointer, to access a member of the
 // class, you use an arrow, not dot
 void sim(Model* m, int steps) { m->sim(steps); }
+
+void sim_lif(Model* m, int steps) { m->sim_lif(steps); }
 
 double* getWeights(Model* m) {
     const int x = m->N;
@@ -509,6 +710,14 @@ void setStimIntensity(Model* m, double* _stimIntensity) {
         // cout << _stimIntensity[i] << " ";
     }
 }
+
+void set_totalInhibW(Model* m, double val) { (m->totalInhibW) = val; }
+
+double get_totalInhibW(Model* m) { return m->totalInhibW; }
+
+void set_inhibition_mode(Model* m, int val) { (m->inhibition_mode) = val; }
+
+int get_inhibition_mode(Model* m) { return m->inhibition_mode; }
 
 void set_Ip(Model* m, double _Ip) { (m->Ip) = _Ip; }
 

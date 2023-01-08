@@ -45,6 +45,7 @@
                 // "-ftree-vectorize",
                 // "-march=native",
                 // "-mavx",
+                "-fopenmp"
                 "-g", // we tell VScode to use the current
                 "${file}", // file as the source code to compile
                 "-o", // output name (can be renamed into .dylib (Mac) or .so (linux))

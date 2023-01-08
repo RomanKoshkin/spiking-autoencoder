@@ -220,6 +220,14 @@ void Model::updateMembranePot(int i) {
         u = -hE + IEex * (mex + sigex * ngn());  // pentagon, p.12
     }
 
+    // in progress on total inhibition
+    double totalInhibition = 0.0;
+    if (inhibition_mode == 1) {
+        for (int ii = NE; ii < NE + NI; ii++) {
+            totalInhibition += getRecent(ii);
+        }
+    }
+
     // then we go over all PREsynaptic neurons that are spiking now
     for (const auto& j : spts) {
         // if a PREsynaptic spiking neuron happens to be excitatory,
@@ -228,10 +236,28 @@ void Model::updateMembranePot(int i) {
             // if a PREsynaptic spiking neuron happens to be inhibitory,
             Uexc[i].back() += F[j] * D[j] * Jo[i][j];
         } else {
-            u += Jo[i][j];  // we add because the E<-I weights are negative
-            Uinh[i].back() += Jo[i][j];
+            if (inhibition_mode == 0) {
+                u += Jo[i][j];  // we add because the E<-I weights are negative
+                Uinh[i].back() += Jo[i][j];
+            }
         }
     }
+    if (inhibition_mode == 1) {
+        u -= totalInhibW * totalInhibition;
+        Uinh[i].back() = -totalInhibW * totalInhibition;
+    }
+}
+
+double Model::getRecent(int i) {
+    int J = sphist[i].size();  // J is the number if presynaptic spikes
+    // we have an array of pointers
+    double acc = 0.0;  // zero accumulator
+    for (int j = 0; j < J; j++) {
+        // the weight of the spike will be the (exponentially) lower the older it is
+        float expw = exp(0.08 * ((sphist[i][j]) - (t)));
+        acc += expw;
+    }
+    return acc;
 }
 
 void Model::checkIfStim(int i) {
@@ -670,4 +696,35 @@ Model::retParamsStructType Model::getState() {
     ret_struct.symmetric = symmetric;
 
     return ret_struct;
+}
+
+void Model::initLIF() {
+    for (int i = 0; i < N; i++) {
+        if (dice() > 0.5) {
+            AP.push_back(0);
+        } else {
+            AP.push_back(1);
+        }
+        V.push_back(EL);
+        in_refractory.push_back(0.0);
+        dV.push_back(0.0);
+        I_E.push_back(0.0);
+        I_I.push_back(0.0);
+        delayed_spike.push_back(0);
+        if (i < NE) {
+            neur_type_mask.push_back(0.0);
+            tau.push_back(TAU_EXCITATORY);
+        } else {
+            neur_type_mask.push_back(1.0);
+            tau.push_back(TAU_INHIBITORY);
+        }
+        ampa.push_back(dvec);
+        nmda.push_back(dvec);
+        gaba.push_back(dvec);
+        for (int j = 0; j < N; j++) {
+            ampa[i].push_back(0.0);
+            nmda[i].push_back(0.0);
+            gaba[i].push_back(0.0);
+        }
+    }
 }

@@ -62,6 +62,9 @@ class cClassOne(object):
         self.lib.sim.argtypes = [c_void_p, c_int]  # takes no args
         self.lib.sim.restype = c_void_p  # returns a void pointer
 
+        self.lib.sim_lif.argtypes = [c_void_p, c_int]  # takes no args
+        self.lib.sim_lif.restype = c_void_p  # returns a void pointer
+
         self.lib.setParams.argtypes = [c_void_p, Structure]  # takes no args
         self.lib.setParams.restype = c_void_p  # returns a void pointer
 
@@ -110,6 +113,18 @@ class cClassOne(object):
 
         self.lib.set_Ip.argtypes = [c_void_p, c_double]  # takes no args
         self.lib.set_Ip.restype = c_void_p  # returns a void pointer
+
+        self.lib.set_totalInhibW.argtypes = [c_void_p, c_double]  # takes c_double
+        self.lib.set_totalInhibW.restype = c_void_p  # returns a void pointer
+
+        self.lib.get_totalInhibW.argtypes = [c_void_p]  # takes no args
+        self.lib.get_totalInhibW.restype = c_double  # returns a double pointer
+
+        self.lib.set_inhibition_mode.argtypes = [c_void_p, c_int]  # takes c_double
+        self.lib.set_inhibition_mode.restype = c_void_p  # returns a void pointer
+
+        self.lib.get_inhibition_mode.argtypes = [c_void_p]  # takes no args
+        self.lib.get_inhibition_mode.restype = c_int  # returns a double pointer
 
         self.lib.set_STDP.argtypes = [c_void_p, c_bool]  # takes no args
         self.lib.set_STDP.restype = c_void_p  # returns a void pointer
@@ -238,6 +253,9 @@ class cClassOne(object):
     def sim(self, interval):
         self.lib.sim(self.obj, interval)
 
+    def sim_lif(self, interval):
+        self.lib.sim_lif(self.obj, interval)
+
     def dumpSpikeStates(self):
         self.lib.dumpSpikeStates(self.obj)
 
@@ -246,6 +264,18 @@ class cClassOne(object):
 
     def set_Ip(self, Ip):
         self.lib.set_Ip(self.obj, Ip)
+
+    def set_totalInhibW(self, totalInhibW):
+        self.lib.set_totalInhibW(self.obj, totalInhibW)
+
+    def get_totalInhibW(self):
+        return self.lib.get_totalInhibW(self.obj)
+
+    def set_inhibition_mode(self, inhibition_mode):
+        self.lib.set_inhibition_mode(self.obj, inhibition_mode)
+
+    def get_inhibition_mode(self):
+        return self.lib.get_inhibition_mode(self.obj)
 
     def set_STDP(self, _STDP):
         self.lib.set_STDP(self.obj, _STDP)

@@ -75,6 +75,7 @@ stimDur = 16000
 nneur = 10
 wide = True
 
-m.sim(1000000)
+# m.sim(1000000)
+m.sim_lif(1000000)
 
 cprint('success!', color='yellow')

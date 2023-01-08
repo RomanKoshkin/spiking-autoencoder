@@ -277,6 +277,8 @@ class Model {
     bool STDPon = true;
     bool symmetric = true;
     bool homeostatic = true;
+    double totalInhibW = 0.5;
+    int inhibition_mode = 0;  // whether to use normal inhibition from (I neurons) or tot inhib
 
     vector<double> dvec;
     vector<double> UU;
@@ -318,6 +320,11 @@ class Model {
 
     // method declarations
     Model(int, int, int, int);  // construction
+    void initLIF();             // this is called only if you want a non-default LIF model
+    void sim_lif(int);
+    double get_bump(int, int);
+    double get_abump(int, int);
+    double getRecent(int);
     double dice();
     double ngn();
     void sim(int);
@@ -382,6 +389,50 @@ class Model {
     //         ofstream ofsb;
     //         string fstrb;
 
+    // BEGIN: *** LIF constants and ARRAYS ***
+    double refractory_period = 1.0;
+
+    // equilibrium potentials:
+    double V_E = 0.0;
+    double V_I = -80.0;  // equilibrium potential for the inhibitory synapse
+    double EL = -65.0;   // leakage potential, mV
+
+    // critical voltages:
+    double Vth = -55.0;  // threshold after which an AP is fired,   mV
+    double Vr = -70.0;   // reset voltage (after an AP is fired), mV
+    double Vspike = 10.0;
+
+    // taus
+    double tau_ampa = 8.0;
+    double tau_nmda = 100.0;
+    double tau_gaba = 8.0;
+
+    // membrane taus
+    double TAU_EXCITATORY = 10.0;
+    double TAU_INHIBITORY = 20.0;
+    double EPSILON = 0.0001;
+
+    vector<int> AP;
+    vector<double> neur_type_mask;
+    vector<double> tau;
+    vector<double> V;
+    vector<double> in_refractory;
+
+    vector<vector<double>> ampa;
+    vector<vector<double>> nmda;
+    vector<vector<double>> gaba;
+    vector<double> dV;
+    vector<double> I_E;
+    vector<double> I_I;
+    vector<int> delayed_spike;
+    vector<int> neurons_that_spiked_at_this_step;
+    double bump;
+    double abump;
+    float _tmp;
+    double z;  // steady input current
+    // END: *** LIF constants and ARRAYS ***
+
+    // POINTERS
     // here you just declare pointers, but you must
     // ALLOCATE space on the heap for them in the class constructor
     double* ptr_Jo;
@@ -409,12 +460,17 @@ class Model {
 Model::Model(int _NE, int _NI, int _NEo, int _cell_id) : m_mt(m_randomdevice()) {
     cwd = getexepath();
     cout << cwd << endl;
+    cout << "Thetas stay constant, change if you need to in `model.h` + in progress on total "
+            "inhibition"
+         << endl;
 
     cell_id = _cell_id;
     NE = _NE;
     NEo = _NEo;
     NI = _NI;
     N = NE + NI;  //
+
+    initLIF();
 
     // initialize the weight matrix Jo
     Jo = calc_J(JEEinit, JEI);
